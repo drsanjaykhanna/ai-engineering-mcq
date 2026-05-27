@@ -1808,5 +1808,295 @@ const QUESTIONS = [
     "Incorrect. CLIP requires massive pre-training. 'Zero-shot' means no additional training for new tasks, not no pre-training.",
     "Incorrect. CLIP trains vision and text encoders separately (with contrastive loss connecting them). It doesn't transfer one model's weights to another."
   ]
+},
+// === QUESTIONS FOR NEW KNOWLEDGE PAGES ===
+{
+  id: "lf29", topic: "LLM Fundamentals", pageId: "kp_moe",
+  question: "Mixtral-8x7B has ~46.7B total parameters but runs at roughly the speed of a 13B model. How?",
+  options: [
+    "It uses quantization to compress the model",
+    "It only activates 2 of its 8 experts per token — so only ~12.9B parameters are used per forward pass",
+    "It skips layers for easy tokens",
+    "It uses CPU offloading for inactive parameters"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Quantization reduces precision. MoE's speedup comes from selective activation — most parameters are never computed for any given token.",
+    "Correct. MoE's core trick: only top-k experts (typically 2) activate per token. 8 experts exist in memory but only 2 contribute to computation. Inference speed is determined by ACTIVE parameters (~12.9B), while knowledge capacity benefits from TOTAL parameters (~46.7B). You get big-model quality at small-model speed.",
+    "Incorrect. Layer skipping (early exit) is a different technique. MoE keeps all layers but selectively uses experts within each layer.",
+    "Incorrect. All parameters are in GPU memory for fast access. CPU offloading would slow things down. The efficiency comes from not computing through inactive experts, not from moving them off-GPU."
+  ]
+},
+{
+  id: "lf30", topic: "LLM Fundamentals", pageId: "kp_moe",
+  question: "What is 'expert collapse' in MoE training and how is it prevented?",
+  options: [
+    "Experts becoming too specialized and overfitting",
+    "All tokens being routed to the same few experts, leaving others unused — prevented by an auxiliary load-balancing loss",
+    "Experts producing conflicting outputs",
+    "The model forgetting to use the routing mechanism"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Over-specialization is actually desirable in MoE — you want experts to develop different competencies.",
+    "Correct. Without load balancing, the router might learn to always send tokens to the same 1-2 'best' experts — the others never train and atrophy. An auxiliary loss penalizes uneven expert utilization, forcing the router to distribute tokens more evenly. This ensures all experts develop useful capabilities and the full parameter count contributes to model quality.",
+    "Incorrect. Experts don't produce conflicting outputs because typically only top-k are used and their outputs are combined with router weights.",
+    "Incorrect. The routing mechanism is a learned neural network — it can't be 'forgotten.' The concern is about HOW it routes, not whether it routes."
+  ]
+},
+{
+  id: "ft11", topic: "Fine-tuning & Alignment", pageId: "kp_synthetic_data",
+  question: "What is 'model collapse' in the context of synthetic data generation?",
+  options: [
+    "The model crashes during training",
+    "Recursive training on synthetic data degrades quality with each generation — errors compound and diversity shrinks",
+    "The model produces identical outputs for all inputs",
+    "Too much synthetic data causes overfitting"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Model collapse isn't a technical crash. It's a gradual degradation of capabilities across training generations.",
+    "Correct. If Model A generates data → Model B trains on it → Model B generates data → Model C trains on it... each generation inherits and amplifies the previous model's errors while losing diversity and tail knowledge. The distribution narrows with each iteration. Research shows this can degrade quality catastrophically over just a few generations. Real-world web data increasingly contains AI-generated text, making this a concern for future pre-training.",
+    "Incorrect. That's mode collapse (a GAN problem). Model collapse in synthetic data is about progressive quality degradation across training generations.",
+    "Incorrect. Overfitting is different — it's memorizing specific examples. Model collapse is about compounding errors and losing diversity across generations."
+  ]
+},
+{
+  id: "pe9", topic: "Prompt Engineering", pageId: "kp_structured_output",
+  question: "What is 'constrained decoding' and why is it important for production LLM systems?",
+  options: [
+    "Limiting the model to short responses",
+    "Masking token probabilities at each generation step to only allow tokens valid according to a schema — guaranteeing structurally valid output",
+    "Constraining the model to only use information from the prompt",
+    "Limiting the number of API calls per minute"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Response length limits (max_tokens) are a different mechanism. Constrained decoding is about output STRUCTURE, not length.",
+    "Correct. At each generation step, a grammar or schema defines which tokens are valid next (e.g., after a JSON key, only ':' is valid). Invalid tokens get probability zero — the model literally CANNOT produce malformed output. This gives 100% structural validity vs ~95-99% with prompt-based approaches. For production systems parsing LLM output, that 1-5% failure rate is unacceptable.",
+    "Incorrect. That's closer to 'grounding' or RAG faithfulness. Constrained decoding is about output format compliance.",
+    "Incorrect. Rate limiting is an API-level control. Constrained decoding operates at the token generation level within a single request."
+  ]
+},
+{
+  id: "pe10", topic: "Prompt Engineering", pageId: "kp_fewshot",
+  question: "Why should the most representative few-shot example be placed LAST in the prompt?",
+  options: [
+    "The model only reads the last example",
+    "Recency bias — models attend more strongly to content near the end of the prompt, so the last example has the most influence",
+    "It's computationally cheaper",
+    "Earlier examples get cached and the last one doesn't"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The model processes all examples, but with different attention strength depending on position.",
+    "Correct. Research shows LLMs exhibit recency bias — tokens near the end of the context receive stronger attention during generation. The last example is 'freshest' in the model's processing and has the most influence on the output pattern. Put your best, most representative example last for maximum impact.",
+    "Incorrect. Example ordering doesn't affect computation cost. All tokens are processed regardless of position.",
+    "Incorrect. Prompt caching caches the PREFIX (beginning), which helps cost but doesn't explain why the last example has more influence on output quality."
+  ]
+},
+{
+  id: "rag13", topic: "RAG Systems", pageId: "kp_hallucination",
+  question: "A RAG system retrieves relevant documents but the LLM still generates claims not supported by the context. What is this called and how do you fix it?",
+  options: [
+    "A retrieval failure — improve the embedding model",
+    "Faithfulness hallucination — the model generates beyond the context. Fix with explicit grounding instructions and citation enforcement",
+    "A tokenization error — the context was split poorly",
+    "An architecture limitation that can't be fixed"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. If documents are retrieved successfully, retrieval isn't the problem. The model is failing to stick to the context.",
+    "Correct. This is a faithfulness failure: the model has the right context but generates claims beyond it (filling gaps with its parametric knowledge, which may be wrong). Fixes: (1) Explicitly instruct 'only answer from the provided context', (2) Require inline citations for every claim, (3) Lower temperature for less creative generation, (4) Use a verification step that checks each claim against the context.",
+    "Incorrect. Tokenization affects how text is processed but doesn't cause the model to generate unsupported claims.",
+    "Incorrect. While no fix is 100%, faithfulness hallucination can be significantly reduced through prompting, citation enforcement, and verification chains."
+  ]
+},
+{
+  id: "dp6", topic: "Deployment & MLOps", pageId: "kp_cost_optimization",
+  question: "An app sends the same 3000-token system prompt with every request. How does prompt caching help?",
+  options: [
+    "It makes the model respond faster by skipping safety checks",
+    "The 3000-token prefix is processed once and cached — subsequent requests only pay ~10% for those cached tokens",
+    "It stores the model's response for reuse",
+    "It compresses the prompt to fewer tokens"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Prompt caching doesn't skip safety checks. It reuses the KV-cache computation from the prefix processing.",
+    "Correct. The first request processes all 3000 tokens at full cost. Subsequent requests within the cache TTL (~5 minutes) reuse the cached KV-cache for those 3000 tokens, paying only ~10% of the input token cost. If the user's query is 200 tokens, you pay full price for 200 + cached price for 3000 = massive savings vs paying full price for 3200 every time.",
+    "Incorrect. Response caching (storing and reusing full answers) is a different technique. Prompt caching speeds up the PROCESSING of repeated input prefixes.",
+    "Incorrect. The prompt stays the same length in tokens. Caching reuses the computation result, not the token count."
+  ]
+},
+{
+  id: "dp7", topic: "Deployment & MLOps", pageId: "kp_cost_optimization",
+  question: "A company routes 80% of queries to GPT-4o-mini and 20% to GPT-4o. What is this pattern called?",
+  options: [
+    "Load balancing",
+    "Model routing — sending easy queries to cheap models and hard queries to expensive models",
+    "A/B testing",
+    "Failover architecture"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Load balancing distributes traffic evenly across identical instances. Model routing distributes based on query complexity to DIFFERENT models.",
+    "Correct. Model routing (or model cascading) uses a classifier or heuristic to assess query difficulty. Easy queries (simple factual, formatting, basic chat) go to fast/cheap models. Complex queries (reasoning, analysis, nuanced tasks) go to expensive models. Since most real traffic is 'easy', this can cut costs 50-80% with minimal quality impact.",
+    "Incorrect. A/B testing sends random traffic to different versions for comparison. Model routing makes an intelligent per-query decision based on complexity.",
+    "Incorrect. Failover sends traffic to a backup when the primary fails. Model routing intentionally uses different models for different query types even when all are healthy."
+  ]
+},
+{
+  id: "ft12", topic: "Fine-tuning & Alignment", pageId: "kp_catastrophic_forgetting",
+  question: "Why does LoRA provide the strongest protection against catastrophic forgetting compared to full fine-tuning?",
+  options: [
+    "LoRA uses a higher learning rate",
+    "LoRA freezes the base model weights entirely — they literally cannot change, so base capabilities are preserved by definition",
+    "LoRA trains on more diverse data",
+    "LoRA uses a different optimizer"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. LoRA typically uses similar or even lower learning rates. The protection comes from architecture, not learning rate.",
+    "Correct. LoRA freezes all base model parameters and only trains tiny adapter matrices. Since the base weights never change, all original capabilities (math, coding, general knowledge) are perfectly preserved. The adapters ADD new behavior without destroying existing behavior. This is architectural protection — not a soft mitigation but a hard guarantee.",
+    "Incorrect. LoRA can be trained on narrow domain data and still not forget, because the base is frozen. Data diversity helps with generalization but isn't why LoRA prevents forgetting.",
+    "Incorrect. The optimizer choice (Adam, etc.) is separate from LoRA's protection mechanism. Freezing the base weights is the key."
+  ]
+},
+{
+  id: "lf31", topic: "LLM Fundamentals", pageId: "kp_structured_output",
+  question: "An API consistently returns 'almost valid' JSON (missing closing brackets, trailing commas). What's the most reliable fix?",
+  options: [
+    "Add more examples of valid JSON in the prompt",
+    "Use constrained decoding or the API's JSON mode to guarantee structural validity",
+    "Increase temperature for more careful generation",
+    "Post-process with a JSON fixer library"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. More examples help but still leave a residual failure rate. Prompt-based approaches are probabilistic, not guaranteed.",
+    "Correct. JSON mode or constrained decoding (Outlines, SGLang) guarantees every output token is valid according to JSON grammar. Zero structural failures. This is the production answer — you can't rely on 'usually valid' when downstream parsers will crash on malformed JSON.",
+    "Incorrect. Higher temperature makes output MORE random, not more careful. This would likely increase formatting errors.",
+    "Incorrect. Post-processing can handle simple issues (trailing commas) but can't reliably reconstruct intent from severely malformed output (was the missing bracket after field A or B?). Prevention is better than cure."
+  ]
+},
+{
+  id: "mm5", topic: "Multimodal AI", pageId: "kp_diffusion",
+  question: "Why does Stable Diffusion operate in 'latent space' rather than pixel space?",
+  options: [
+    "Latent space produces higher quality images",
+    "Operating on compressed representations is much faster and cheaper than diffusing full-resolution pixel arrays",
+    "Pixel space can't represent colors accurately",
+    "The text encoder only works with latent representations"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Quality is similar — the VAE decoder reconstructs full-resolution images from latents. The advantage is computational, not qualitative.",
+    "Correct. A 512×512 RGB image has 786,432 values. A latent representation might be 64×64×4 = 16,384 values — 48× smaller. Running 50 denoising steps on latents is 48× cheaper than on pixels. This made diffusion models practical on consumer GPUs (Stable Diffusion runs on an RTX 3060). Without latent diffusion, text-to-image would require datacenter-scale compute.",
+    "Incorrect. Pixel space represents colors perfectly (that's literally what pixels are). The issue is computational cost of operating on high-dimensional pixel arrays.",
+    "Incorrect. The text encoder (CLIP) produces an embedding that conditions the diffusion process. It doesn't require latent space specifically — it's the U-Net that benefits from working in compressed space."
+  ]
+},
+{
+  id: "mm6", topic: "Multimodal AI", pageId: "kp_whisper",
+  question: "What makes Whisper's approach to speech recognition different from traditional ASR systems?",
+  options: [
+    "It uses a smaller vocabulary",
+    "It's a single end-to-end transformer trained on massive multilingual data — no separate pipeline stages",
+    "It only works with English",
+    "It requires aligned transcription training data"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Whisper uses standard text vocabularies. Its innovation is in architecture and training, not vocabulary.",
+    "Correct. Traditional ASR had separate components: acoustic model, pronunciation model, language model — each trained separately. Whisper is one transformer that goes directly from audio spectrograms to text tokens, trained end-to-end on 680k hours of diverse internet audio. This simplicity + scale = state-of-the-art results across 99 languages, accents, noise conditions.",
+    "Incorrect. Whisper supports 99 languages and can even translate non-English speech directly to English text.",
+    "Incorrect. Whisper was trained on weakly-supervised data from the internet — audio with approximate (not perfectly aligned) transcriptions. This allowed much more training data than perfectly aligned datasets."
+  ]
+},
+{
+  id: "ss5", topic: "Security & Safety", pageId: "kp_red_teaming",
+  question: "Why should you red team your full application system rather than just the underlying model?",
+  options: [
+    "The model doesn't have vulnerabilities on its own",
+    "The system (tools, permissions, output handling) creates attack surfaces that don't exist in the model alone",
+    "It's cheaper to test the system than the model",
+    "Models are already red-teamed by their providers"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Models do have standalone vulnerabilities (jailbreaks, bias). But system-level testing catches more.",
+    "Correct. A model that's safe in isolation becomes dangerous when connected to tools (code executor, database, email). A prompt injection that's harmless in a chat becomes critical when the model can execute code or access sensitive data. The attack surface is: model vulnerabilities × tool capabilities × permission scope. You must test the complete system.",
+    "Incorrect. System testing isn't necessarily cheaper — it may be more complex due to the number of interaction paths.",
+    "Incorrect. Provider red-teaming covers the base model but NOT your application's specific prompt, tools, context, and use case. You must test your own system."
+  ]
+},
+{
+  id: "ft13", topic: "Fine-tuning & Alignment", pageId: "kp_constitutional_ai",
+  question: "How does Constitutional AI (CAI) differ from standard RLHF?",
+  options: [
+    "CAI uses more human annotators",
+    "CAI replaces human preference judgments with AI self-critique based on explicit principles — scaling alignment without human labels",
+    "CAI doesn't use reinforcement learning",
+    "CAI only works for small models"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. CAI's innovation is REDUCING dependence on human annotators by using AI self-critique.",
+    "Correct. In RLHF, humans compare outputs and the model learns from their preferences (implicit, hard to audit). In CAI, the model critiques itself against explicit written principles (the constitution). Preference pairs are generated by the AI, not humans. This scales better, is more consistent, and the principles are transparent and auditable — you can see exactly what the model was aligned to.",
+    "Incorrect. CAI does use RL — specifically RLAIF (RL from AI Feedback). The RL part is the same; the FEEDBACK source changes from human to AI.",
+    "Incorrect. CAI is used for large models (Claude is trained with CAI). Model size is irrelevant to the technique."
+  ]
+},
+{
+  id: "ag9", topic: "AI Agents & Tool Use", pageId: "kp_a2a",
+  question: "What is the relationship between MCP and A2A protocols?",
+  options: [
+    "They are competing standards that do the same thing",
+    "MCP connects agents to tools (function calling); A2A connects agents to other agents (task delegation). They're complementary.",
+    "A2A is the newer version of MCP",
+    "MCP is for open-source and A2A is for commercial use"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. They solve different problems and are designed to work together, not compete.",
+    "Correct. MCP (Anthropic) standardizes how an agent calls tools — search, database queries, file operations. A2A (Google) standardizes how one agent delegates work to another autonomous agent. An agent might use MCP to call a calculator tool, and A2A to delegate a research task to a specialized research agent. Different layers of the same ecosystem.",
+    "Incorrect. They were developed by different organizations (Anthropic vs Google) for different purposes. Neither replaces the other.",
+    "Incorrect. Both are open protocols. The distinction is functional (tool access vs agent collaboration), not licensing."
+  ]
+},
+{
+  id: "lf32", topic: "LLM Fundamentals", pageId: "kp_model_merging",
+  question: "A team has a Llama model fine-tuned on medical data and another fine-tuned on legal data. They want one model that handles both. What's the most efficient approach?",
+  options: [
+    "Fine-tune from scratch on both datasets combined",
+    "Merge the two fine-tuned models using SLERP or TIES — no additional training required",
+    "Run both models in parallel and route queries",
+    "Use the legal model and add medical knowledge through RAG"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Retraining from scratch works but is expensive and time-consuming. Model merging achieves a similar result for free.",
+    "Correct. Model merging combines the weights of both fine-tuned models into one. Since medical fine-tuning and legal fine-tuning likely modified different weight subspaces, they can coexist in the merged model. SLERP smoothly interpolates between them. Zero additional training cost, takes minutes on CPU, and often preserves 80-90% of both models' specialized capabilities.",
+    "Incorrect. Running two models doubles infrastructure cost. Model merging gives you one model that handles both, with single-model resource requirements.",
+    "Incorrect. RAG adds knowledge at inference time but doesn't give the model domain-specific reasoning style that fine-tuning provides."
+  ]
+},
+{
+  id: "dp8", topic: "Deployment & MLOps", pageId: "kp_prompt_caching",
+  question: "A developer structures their prompt as: [user query first, then system instructions, then examples]. Why is this suboptimal for prompt caching?",
+  options: [
+    "The prompt is too long",
+    "The dynamic content (user query) is at the start, breaking the cache for the static prefix on every request",
+    "System instructions should never be in the prompt",
+    "Examples shouldn't be included in prompts"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Prompt length doesn't inherently break caching. The issue is the ordering of static vs dynamic content.",
+    "Correct. Prompt caching matches from the BEGINNING of the prompt. If the first tokens change every request (different user query), the cache never hits — even though the system instructions and examples are identical across requests. Fix: put static content (system prompt + examples) FIRST, dynamic content (user query) LAST. Now the cache matches the stable prefix every time.",
+    "Incorrect. System instructions are standard and recommended. The issue is where they're positioned relative to dynamic content.",
+    "Incorrect. Examples are valuable for few-shot prompting. The issue is ordering, not inclusion."
+  ]
 }
 ];

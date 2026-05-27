@@ -723,5 +723,269 @@ const KNOWLEDGE_PAGES = [
     "Frameworks: Guardrails AI, NeMo Guardrails. Often combined: fast regex + slow LLM review for edge cases.",
     "Latency tradeoff: synchronous fast checks for all traffic, async LLM checks only for flagged content"
   ]
+},
+{
+  id: "kp_moe",
+  title: "Mixture of Experts (MoE): Scaling Without Scaling Compute",
+  content: `<p><strong>Mixture of Experts (MoE)</strong> is an architecture that dramatically increases model capacity (total parameters) while keeping inference cost manageable. The trick: only a subset of the model activates for each token.</p>
+<p><strong>How it works:</strong> Replace each dense feed-forward layer with multiple "expert" feed-forward networks (e.g., 8 experts) plus a lightweight <strong>router</strong> that decides which experts to use. For each token, the router picks the top-k experts (typically k=2) and routes that token's computation only through those experts. The other 6 sit idle.</p>
+<p><strong>Why this is powerful:</strong> Mixtral-8x7B has 46.7B total parameters (8 experts × 7B each, roughly) but only activates ~12.9B per token (2 experts at a time). It runs at the speed of a ~13B dense model but has the knowledge capacity of a much larger one. You get the quality of a large model at the cost of a smaller one.</p>
+<p><strong>The router:</strong> A small learned network that takes the token's hidden state and outputs probabilities over experts. Usually trained jointly with the rest of the model using an auxiliary load-balancing loss to prevent "expert collapse" (where all tokens get routed to the same few experts).</p>
+<p><strong>Tradeoffs:</strong> (1) Higher total memory footprint — you store ALL experts even though only some activate. (2) Load balancing is tricky — poorly balanced routing wastes capacity. (3) Communication overhead in distributed setups — tokens may need to be routed to different GPUs for different experts.</p>
+<p><strong>GPT-4 is rumored to be MoE:</strong> Reportedly 8 experts of ~220B each, with 2 active per token. This would explain how it achieves its capability at manageable inference cost.</p>`,
+  keyPoints: [
+    "MoE = many expert networks but only top-k activate per token. Total params >> active params.",
+    "Mixtral-8x7B: 46.7B total params, ~12.9B active per token. Quality of 46B, speed of 13B.",
+    "Router: small network that assigns tokens to experts. Needs load-balancing loss to prevent collapse.",
+    "Tradeoff: all experts stored in memory even if only 2 active. High total memory, but fast inference per token."
+  ]
+},
+{
+  id: "kp_synthetic_data",
+  title: "Synthetic Data: LLMs Training LLMs",
+  content: `<p><strong>Synthetic data generation</strong> uses existing LLMs to create training data for fine-tuning other (usually smaller) models. It's become a core technique for building specialized AI systems without expensive human annotation.</p>
+<p><strong>Why it works:</strong> A strong model (GPT-4, Claude) can generate high-quality instruction-response pairs, reasoning chains, or domain-specific examples far faster and cheaper than humans. A weaker model fine-tuned on these outputs can capture much of the stronger model's behavior for specific tasks.</p>
+<p><strong>Common approaches:</strong></p>
+<p>• <strong>Distillation:</strong> Use a large model to generate training data, fine-tune a smaller model on it. The small model inherits task-specific capabilities at a fraction of the cost. Alpaca (Stanford) was the first prominent example: GPT-3.5 generated 52k instruction examples used to fine-tune Llama-7B.</p>
+<p>• <strong>Self-instruct:</strong> The model generates its own instruction-following examples from a small seed set, then is fine-tuned on its own outputs. Bootstrap quality from a few examples.</p>
+<p>• <strong>Evol-Instruct:</strong> Start with simple instructions and use an LLM to progressively make them more complex — adding constraints, requiring deeper reasoning, combining topics. Creates a curriculum from easy to hard.</p>
+<p><strong>Risks:</strong> (1) Model collapse — recursive training on synthetic data can degrade quality over generations. (2) Bias amplification — synthetic data inherits and can amplify the source model's biases. (3) Terms of service — using GPT-4 output to train competitors may violate OpenAI's ToS.</p>`,
+  keyPoints: [
+    "Use strong model output to train weaker models (distillation). Alpaca: GPT-3.5 → 52k examples → fine-tune Llama-7B.",
+    "Evol-Instruct: LLM progressively makes training examples harder. Creates easy→hard curriculum.",
+    "Risk: model collapse from recursive synthetic training. Each generation can degrade quality.",
+    "ToS risk: using GPT-4/Claude output to train commercial models may violate provider terms."
+  ]
+},
+{
+  id: "kp_structured_output",
+  title: "Structured Output: Making LLMs Produce Valid JSON, SQL, and Code",
+  content: `<p>LLMs generate free text by default, but applications need <strong>structured output</strong> — valid JSON for APIs, SQL for databases, specific formats for downstream processing. Getting reliable structure from a probabilistic text generator is one of the key challenges in AI engineering.</p>
+<p><strong>Prompt-based approaches (soft constraints):</strong></p>
+<p>• Include format examples in your prompt ("respond in this exact JSON format: ...")</p>
+<p>• Use system instructions ("always respond in valid JSON")</p>
+<p>• OpenAI's JSON mode — model is instructed to only output valid JSON</p>
+<p>These are probabilistic — the model usually complies but can fail, especially with complex schemas.</p>
+<p><strong>Constrained decoding (hard constraints):</strong></p>
+<p>• <strong>Outlines / guidance:</strong> At each generation step, mask the token probabilities to only allow tokens that are valid according to a grammar or JSON schema. The model literally CANNOT produce invalid output because invalid tokens have zero probability.</p>
+<p>• <strong>Function calling:</strong> API providers train models to output structured function calls with typed arguments. More reliable than raw JSON prompting.</p>
+<p><strong>Why this matters:</strong> Downstream systems (APIs, databases, parsers) crash on malformed output. A 99% success rate means 1% of requests fail. Constrained decoding gives 100% structural validity. For production systems, this is the difference between "usually works" and "always works."</p>`,
+  keyPoints: [
+    "Prompt-based = soft constraint (model usually complies). Constrained decoding = hard constraint (model CAN'T produce invalid output).",
+    "Outlines/guidance: mask token probabilities at each step to enforce grammar. 100% valid output guaranteed.",
+    "Function calling: API-level structured output trained into the model. More reliable than raw JSON prompting.",
+    "99% success ≠ production-ready. For APIs and databases, you need structural guarantees, not probabilities."
+  ]
+},
+{
+  id: "kp_fewshot",
+  title: "Few-Shot Prompting: Teaching by Example",
+  content: `<p><strong>Few-shot prompting</strong> provides examples of the desired input-output behavior directly in the prompt. Instead of describing what you want (zero-shot), you SHOW the model what you want through demonstrations.</p>
+<p><strong>Why it works:</strong> LLMs are powerful pattern matchers. When you provide 3-5 examples of the pattern "input → desired output," the model recognizes and continues the pattern. This leverages <strong>in-context learning</strong> — the model adapts its behavior based on the examples without any weight updates.</p>
+<p><strong>Best practices:</strong></p>
+<p>• <strong>Example selection:</strong> Choose diverse examples that cover edge cases and variation. Similar examples teach less than diverse ones.</p>
+<p>• <strong>Example ordering:</strong> Research shows order matters — examples closer to the end of the prompt have more influence (recency bias). Put your most representative example last.</p>
+<p>• <strong>Number of examples:</strong> 3-5 usually sufficient. More examples improve consistency but use context window. Diminishing returns past ~10.</p>
+<p>• <strong>Format consistency:</strong> Keep the format identical across all examples. The model learns the pattern, so inconsistent formatting confuses it.</p>
+<p><strong>When few-shot beats zero-shot:</strong> Complex output formats, domain-specific jargon, nuanced classification categories, any task where describing the behavior is harder than showing it. When zero-shot beats few-shot: simple tasks where the instruction is clear enough, or when context window is too limited for examples.</p>`,
+  keyPoints: [
+    "Show, don't tell: provide input→output examples directly in the prompt. Model pattern-matches and continues.",
+    "3-5 diverse examples usually sufficient. Diminishing returns past ~10. Most important example goes LAST.",
+    "In-context learning: model adapts behavior from examples with NO weight updates — just pattern recognition",
+    "Use few-shot when describing behavior is harder than showing it. Use zero-shot when instructions are clear enough."
+  ]
+},
+{
+  id: "kp_hallucination",
+  title: "Hallucination: Why LLMs Make Things Up",
+  content: `<p><strong>Hallucination</strong> is when an LLM generates information that is factually wrong, unsupported, or fabricated — but presents it confidently as fact. It's the single biggest trust barrier for deploying LLMs in production.</p>
+<p><strong>Why it happens:</strong></p>
+<p>• LLMs are trained to produce <em>plausible</em> text, not <em>true</em> text. If "the CEO of X is Y" is a plausible sentence pattern, the model may generate it regardless of accuracy.</p>
+<p>• No internal fact-checking mechanism — the model generates token by token without verifying against a knowledge base.</p>
+<p>• Training on internet data includes errors, contradictions, and outdated information.</p>
+<p>• Sycophancy: models are RLHF-trained to be helpful and agreeable, which can mean confidently answering questions they should say "I don't know" to.</p>
+<p><strong>Types:</strong> (1) Factual — wrong facts stated confidently. (2) Faithfulness — in RAG, claiming things not in the retrieved context. (3) Fabrication — inventing citations, URLs, research papers that don't exist.</p>
+<p><strong>Mitigation strategies:</strong></p>
+<p>• <strong>RAG:</strong> Ground responses in retrieved documents (reduces but doesn't eliminate — model can still hallucinate beyond context)</p>
+<p>• <strong>Lower temperature:</strong> More deterministic output = less creative fabrication</p>
+<p>• <strong>Prompt engineering:</strong> "Only answer based on the provided context. If unsure, say 'I don't know.'"</p>
+<p>• <strong>Verification chains:</strong> Have a second LLM check the first one's claims against source material</p>
+<p>• <strong>Citation enforcement:</strong> Require the model to cite specific passages from context, then verify the citations exist</p>`,
+  keyPoints: [
+    "LLMs generate PLAUSIBLE text, not VERIFIED text. Confidence ≠ correctness.",
+    "Root cause: trained on pattern prediction, not truth verification. No internal fact-checker.",
+    "Sycophancy makes it worse — RLHF trains models to be 'helpful' which includes confidently answering when they should say 'I don't know'",
+    "Mitigations: RAG (grounding), low temperature, 'say I don't know' instructions, citation enforcement, verification chains"
+  ]
+},
+{
+  id: "kp_cost_optimization",
+  title: "LLM Cost Optimization: Spending Less Without Losing Quality",
+  content: `<p>LLM API costs scale with token usage. At scale, optimizing cost without degrading quality is critical. Here are the main levers:</p>
+<p><strong>Prompt optimization:</strong></p>
+<p>• Shorter prompts = fewer input tokens = lower cost. Remove verbose instructions, compress examples, use concise system prompts.</p>
+<p>• <strong>Prompt caching:</strong> Many providers (Anthropic, OpenAI) cache repeated prompt prefixes. If 90% of your prompt is the same system prompt, you only pay full price once — subsequent calls reuse the cached prefix at reduced cost.</p>
+<p><strong>Model routing:</strong></p>
+<p>• Route easy queries to cheap models (Haiku, GPT-4o-mini) and hard queries to expensive models (Opus, GPT-4). A classifier or simple heuristic decides complexity. 80% of queries may be "easy" — massive savings.</p>
+<p><strong>Caching responses:</strong></p>
+<p>• Cache common question-answer pairs. If 20% of queries are repeated or near-identical, cache saves 20% of LLM calls entirely.</p>
+<p>• Semantic caching: embed the query, check if a similar query was already answered, return the cached response.</p>
+<p><strong>Batching:</strong></p>
+<p>• Anthropic Batch API, OpenAI Batch API: submit non-urgent requests in batches at 50% cost. Results within 24 hours. Great for offline processing, evaluation, data generation.</p>
+<p><strong>Fine-tuning for cost:</strong></p>
+<p>• Fine-tune a small model to replicate a large model's behavior on your specific task. Higher upfront cost, but massively lower per-query cost at scale.</p>`,
+  keyPoints: [
+    "Prompt caching: repeated prompt prefixes cached at reduced cost. Structure prompts with static prefix + dynamic suffix.",
+    "Model routing: cheap model for easy queries, expensive for hard ones. 80/20 rule often applies.",
+    "Batch APIs: 50% cost for non-urgent requests (24hr turnaround). Use for evals, data generation, offline processing.",
+    "Fine-tune small model on big model's output for your task: high upfront cost, but massively cheaper per-query at scale."
+  ]
+},
+{
+  id: "kp_model_merging",
+  title: "Model Merging: Combining Models Without Training",
+  content: `<p><strong>Model merging</strong> combines the weights of two or more fine-tuned models into a single model — without any additional training. It's a surprisingly effective technique for creating models with combined capabilities.</p>
+<p><strong>Why it works (loosely):</strong> Fine-tuning changes only a small subset of the model's representations (the "task vector"). Different fine-tunes modify different subspaces. When you merge, these task-specific modifications can coexist without interfering much — like combining different colored lights that each illuminate different areas.</p>
+<p><strong>Key methods:</strong></p>
+<p>• <strong>SLERP (Spherical Linear Interpolation):</strong> Smoothly interpolates between two models on the surface of a hypersphere. Best for merging two models. Produces the cleanest results.</p>
+<p>• <strong>TIES (Trim, Elect, Sign & Merge):</strong> Identifies and resolves parameter conflicts between models. Trims small changes, resolves sign conflicts, then merges. Better than naive averaging.</p>
+<p>• <strong>DARE (Drop And Rescale):</strong> Randomly drops a percentage of fine-tuning changes, then rescales the remaining ones. The sparsification reduces interference between merged models.</p>
+<p>• <strong>Linear / weighted average:</strong> Simple weighted combination of weights. w_merged = α × w_model1 + (1-α) × w_model2. Often α=0.5 but can be tuned.</p>
+<p><strong>Tool: mergekit</strong> — the standard tool for model merging. Configure merge strategy, specify models, run merge. No GPU needed for the merge itself (CPU operation on weight tensors).</p>`,
+  keyPoints: [
+    "Model merging = combine weights of fine-tuned models without retraining. Zero training cost.",
+    "SLERP: best for 2 models. TIES: resolves conflicts. DARE: sparsify + rescale to reduce interference.",
+    "Works because different fine-tunes modify different subspaces — they can coexist in the merged model.",
+    "mergekit: standard tool. CPU-only operation. Specify models + strategy → merged model."
+  ]
+},
+{
+  id: "kp_diffusion",
+  title: "Diffusion Models: How AI Generates Images",
+  content: `<p><strong>Diffusion models</strong> (Stable Diffusion, DALL-E, Midjourney) generate images by learning to reverse a gradual noising process. Start with pure noise, iteratively denoise it into a coherent image guided by a text prompt.</p>
+<p><strong>The forward process (training):</strong> Take a real image and gradually add Gaussian noise over many steps until it becomes pure noise. The model learns to predict the noise that was added at each step — essentially learning to "undo" noise.</p>
+<p><strong>The reverse process (generation):</strong> Start with random noise. At each step, the model predicts what noise was added, removes it, getting slightly closer to a real image. After ~50 denoising steps, you have a generated image. The text prompt GUIDES this denoising — conditioning the model to remove noise in a way that produces an image matching the description.</p>
+<p><strong>Latent diffusion (Stable Diffusion):</strong> Instead of operating on raw pixels (expensive — a 512×512 image is huge), first encode the image into a smaller latent space using a VAE (Variational Autoencoder). Do all the diffusion in this compressed space, then decode back to pixels at the end. Much faster and cheaper.</p>
+<p><strong>The pipeline for text-to-image:</strong></p>
+<p>1. CLIP text encoder converts your prompt to an embedding</p>
+<p>2. U-Net (or transformer) denoises in latent space, conditioned on the text embedding</p>
+<p>3. VAE decoder converts the final latent to a full-resolution image</p>`,
+  keyPoints: [
+    "Diffusion = learn to reverse noise addition. Start with noise → iteratively denoise → coherent image.",
+    "Latent diffusion (Stable Diffusion): compress image to latent space first → diffuse in small space → decompress. Much faster.",
+    "Pipeline: CLIP encodes text → U-Net denoises latent (guided by text) → VAE decodes to pixels",
+    "Each denoising step removes predicted noise, guided by the text condition. ~50 steps total."
+  ]
+},
+{
+  id: "kp_catastrophic_forgetting",
+  title: "Catastrophic Forgetting: The Hidden Cost of Fine-tuning",
+  content: `<p><strong>Catastrophic forgetting</strong> occurs when fine-tuning on a new task overwrites the representations that enabled previously learned capabilities. The model gets better at the new task but loses general abilities.</p>
+<p><strong>Why it happens:</strong> Neural network weights are shared across all capabilities. When you fine-tune on medical Q&A, the gradient updates that improve medical performance modify the same weights used for math, coding, and general reasoning. The model's "knowledge" is distributed — there's no modular separation of capabilities.</p>
+<p><strong>How to detect it:</strong> After fine-tuning, evaluate on a diverse benchmark (MMLU, HumanEval, etc.) and compare against the base model. If general scores drop significantly while task-specific scores rise, you've got catastrophic forgetting.</p>
+<p><strong>Mitigation strategies:</strong></p>
+<p>• <strong>LoRA/QLoRA:</strong> Freeze the base model, only train small adapters. The base capabilities are literally unchanged (frozen). This is the strongest protection.</p>
+<p>• <strong>Low learning rate:</strong> Smaller updates = less disruption to existing representations.</p>
+<p>• <strong>Mixed training data:</strong> Include general-purpose examples alongside task-specific data (e.g., 10% general, 90% task).</p>
+<p>• <strong>Short training:</strong> Fine-tune for fewer epochs. Often 1-3 epochs is enough; more causes overfitting AND forgetting.</p>
+<p>• <strong>Regularization:</strong> EWC (Elastic Weight Consolidation) penalizes changing weights that were important for previous tasks.</p>`,
+  keyPoints: [
+    "Catastrophic forgetting = fine-tuning improves new task but degrades general capabilities. Shared weights are the root cause.",
+    "LoRA is the strongest protection: base model is FROZEN, literally can't forget. Adapters learn the new task.",
+    "Detect it: benchmark on general tasks (MMLU, HumanEval) before and after fine-tuning. Score drops = forgetting.",
+    "Mitigate: LoRA (best), low learning rate, mix general data into training, limit to 1-3 epochs"
+  ]
+},
+{
+  id: "kp_prompt_caching",
+  title: "Prompt Caching: The Easiest Cost and Latency Win",
+  content: `<p><strong>Prompt caching</strong> allows LLM providers to cache the processing of repeated prompt prefixes, dramatically reducing cost and latency for applications that share common system prompts.</p>
+<p><strong>How it works:</strong> When you send a prompt to the API, the provider checks if the beginning of your prompt matches a recently-cached prefix. If it does, the cached computation (the KV-cache from processing that prefix) is reused — the model only needs to process the new/different part.</p>
+<p><strong>Impact:</strong> If your prompt is 4000 tokens and the last 500 are user-specific, with caching you effectively pay full price for 4000 tokens once, then 90% less for the cached portion on subsequent calls. Anthropic charges ~10% of the normal input rate for cached tokens. For applications with heavy system prompts, this is 5-10× savings.</p>
+<p><strong>How to take advantage:</strong></p>
+<p>• Structure prompts with static content FIRST (system prompt, examples, context) and dynamic content LAST (user query). The static prefix gets cached.</p>
+<p>• Keep the prefix consistent — even small changes break the cache match.</p>
+<p>• The cache has a TTL (5 minutes for Anthropic). Steady traffic maintains the cache; sporadic usage doesn't benefit.</p>
+<p><strong>Latency benefit:</strong> Beyond cost, cached prefixes process faster because the KV-cache is pre-computed. You skip the computation for the cached portion entirely.</p>`,
+  keyPoints: [
+    "Static prompt prefix gets cached → subsequent calls process only the new/dynamic suffix at ~90% cost reduction",
+    "Structure prompts: static system prompt + examples FIRST, dynamic user query LAST. Order matters for caching.",
+    "Cache TTL: ~5 minutes. Steady traffic keeps cache warm; sporadic usage misses the cache.",
+    "Double benefit: cost savings (pay less for cached tokens) AND latency reduction (skip recomputing the prefix)"
+  ]
+},
+{
+  id: "kp_red_teaming",
+  title: "Red Teaming: Finding Vulnerabilities Before Attackers Do",
+  content: `<p><strong>Red teaming</strong> for LLMs means systematically trying to make the model produce harmful, incorrect, or policy-violating outputs. The goal is to discover vulnerabilities before deployment so they can be fixed.</p>
+<p><strong>What red teamers test:</strong></p>
+<p>• <strong>Safety bypasses:</strong> Can you get the model to provide harmful instructions? (weapons, drugs, hacking)</p>
+<p>• <strong>Prompt injection:</strong> Can you override system instructions through user input or retrieved content?</p>
+<p>• <strong>Bias and stereotyping:</strong> Does the model produce discriminatory outputs for certain demographics?</p>
+<p>• <strong>Information leakage:</strong> Can you extract system prompts, training data, or PII?</p>
+<p>• <strong>Factual manipulation:</strong> Can you get the model to confidently assert false claims?</p>
+<p><strong>Approaches:</strong></p>
+<p>• <strong>Manual:</strong> Human experts craft adversarial prompts based on experience. Most creative but doesn't scale.</p>
+<p>• <strong>Automated:</strong> Use another LLM to generate attack prompts (e.g., Tree of Attacks with Pruning). Scales but may miss novel attack vectors.</p>
+<p>• <strong>Hybrid:</strong> Human-guided strategy + automated execution. Best of both worlds.</p>
+<p><strong>For AI engineers:</strong> Red team your application, not just the model. Test the full system: prompts, tools, guardrails, output handling. A model might be safe in isolation but dangerous when connected to tools with excessive permissions.</p>`,
+  keyPoints: [
+    "Red teaming = systematically trying to break the system BEFORE deployment. Find vulnerabilities proactively.",
+    "Test: safety bypasses, prompt injection, bias, information leakage, factual manipulation",
+    "Automated red teaming: use LLMs to generate attack prompts at scale. Complements human creativity.",
+    "Red team the SYSTEM, not just the model. Tools + permissions + output handling are attack surfaces too."
+  ]
+},
+{
+  id: "kp_constitutional_ai",
+  title: "Constitutional AI: Self-Supervised Alignment",
+  content: `<p><strong>Constitutional AI (CAI)</strong> is Anthropic's approach to alignment that reduces dependence on human labelers. Instead of humans rating outputs, the AI critiques and revises its own responses based on a set of principles (the "constitution").</p>
+<p><strong>How it works:</strong></p>
+<p>• <strong>Step 1 (Critique & Revision):</strong> Generate a response. Then ask the model to critique its own response against constitutional principles ("Is this response harmful?", "Does this respect user autonomy?"). The model revises its response based on its own critique. Repeat for multiple principles.</p>
+<p>• <strong>Step 2 (RL from AI Feedback):</strong> Instead of human comparisons for RLHF, use the AI's own judgments (based on the constitution) to create preference pairs. Train a reward model on these AI-generated preferences. Then do RL as in standard RLHF.</p>
+<p><strong>The constitution:</strong> A set of explicit principles like "Choose the response that is most helpful while being honest and harmless" or "Prefer responses that show awareness of their limitations." These replace implicit human preferences with explicit, auditable rules.</p>
+<p><strong>Why this matters:</strong> (1) Scales better than human annotation (AI critique is cheap). (2) More consistent than human raters. (3) The principles are transparent and auditable — you can see exactly what the model was aligned to. (4) Reduces the need for large human preference datasets.</p>`,
+  keyPoints: [
+    "CAI: model critiques and revises its own responses based on explicit principles (the constitution)",
+    "Two steps: (1) self-critique + revision, (2) RL from AI Feedback (RLAIF) using AI-generated preference pairs",
+    "Advantages: scales better than human annotation, principles are explicit and auditable, more consistent",
+    "The constitution = set of transparent rules. You can audit what the model was aligned to."
+  ]
+},
+{
+  id: "kp_a2a",
+  title: "Agent2Agent (A2A) Protocol: Agents Talking to Agents",
+  content: `<p><strong>Agent2Agent (A2A)</strong> is Google's open protocol for communication between AI agents, complementing MCP. While MCP connects agents to tools, A2A connects agents to each other.</p>
+<p><strong>The problem:</strong> As AI systems become more agentic, you need agents built by different teams/vendors to collaborate. Agent A (your company's assistant) might need to coordinate with Agent B (a vendor's scheduling system). Without a standard, every agent-to-agent integration is bespoke.</p>
+<p><strong>Key concepts:</strong></p>
+<p>• <strong>Agent Card:</strong> A JSON metadata file describing an agent's capabilities, endpoint, and authentication. Think of it as an agent's "business card" — other agents read it to know what this agent can do.</p>
+<p>• <strong>Tasks:</strong> The core interaction unit. One agent sends a task to another, which can accept, decline, or negotiate. Tasks have states (pending, in-progress, complete, failed).</p>
+<p>• <strong>Artifacts:</strong> The outputs of a task — files, data, structured results that agents exchange.</p>
+<p><strong>MCP vs A2A:</strong> MCP = agent ↔ tool (calling a function). A2A = agent ↔ agent (delegating a task to another autonomous entity). They're complementary: an agent uses MCP to call tools and A2A to collaborate with other agents.</p>`,
+  keyPoints: [
+    "A2A = agent-to-agent communication standard (Google). Agents collaborate across organizations.",
+    "Agent Card: JSON describing capabilities. Tasks: core interaction unit with lifecycle. Artifacts: task outputs.",
+    "MCP vs A2A: MCP = agent↔tool (function calling). A2A = agent↔agent (task delegation). Complementary.",
+    "Enables multi-vendor agent ecosystems: your assistant delegates to a vendor's scheduling agent via standard protocol."
+  ]
+},
+{
+  id: "kp_whisper",
+  title: "Audio Models: Whisper and Speech-to-Text",
+  content: `<p><strong>Whisper</strong> is OpenAI's speech recognition model that brought near-human accuracy to automatic speech-to-text (ASR). It's open-source and represents the state-of-the-art for practical speech recognition.</p>
+<p><strong>Architecture:</strong> Encoder-decoder transformer. Audio is converted to a mel spectrogram (visual representation of frequencies over time), processed by the encoder, then the decoder generates text tokens autoregressively — just like a language model but with audio input instead of text input.</p>
+<p><strong>Key capabilities:</strong></p>
+<p>• <strong>Multilingual:</strong> Trained on 680,000 hours of multilingual audio from the internet. Supports 99 languages.</p>
+<p>• <strong>Translation:</strong> Can directly translate speech from one language to English text (not just transcription).</p>
+<p>• <strong>Timestamps:</strong> Can output word-level or segment-level timestamps for subtitle generation.</p>
+<p>• <strong>Robustness:</strong> Handles accents, background noise, and technical terminology well because of the massive, diverse training data.</p>
+<p><strong>Sizes:</strong> From tiny (39M params, fast but less accurate) to large-v3 (1.5B params, most accurate). The small model runs in real-time on a MacBook; the large model needs a GPU but handles even difficult audio well.</p>
+<p><strong>For AI engineers:</strong> Whisper is the standard for adding speech input to LLM applications. Audio → Whisper → text → LLM → response. For real-time applications, faster-whisper (CTranslate2 optimized) or Whisper.cpp provide low-latency alternatives.</p>`,
+  keyPoints: [
+    "Whisper: encoder-decoder transformer. Audio mel spectrogram → encoder → decoder → text tokens.",
+    "99 languages, direct speech-to-English translation, word-level timestamps, robust to noise/accents",
+    "Sizes: tiny (39M, real-time on CPU) to large-v3 (1.5B, most accurate, needs GPU)",
+    "For LLM apps: Audio → Whisper (speech-to-text) → LLM → response. Standard pipeline for voice interfaces."
+  ]
 }
 ];
