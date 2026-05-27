@@ -1,4 +1,95 @@
 const LEARNING_MODULES = [
+// === ROADMAP: DOCTOR → AI ENGINEER ===
+{
+  title: "Your Roadmap: Doctor to AI Engineer",
+  description: "You have 8 degrees and zero patience for filler. Here's exactly what to learn, in what order, and what to skip — tailored for a non-technical clinician entering AI.",
+  level: "beginner",
+  readTime: "8 min",
+  linkedTopics: ["AI Engineering Architecture"],
+  content: `
+<h2>Your Unfair Advantages</h2>
+
+<p>Before we talk about gaps, let's talk about what you already have that most AI engineers don't:</p>
+
+<ul>
+<li><strong>Systems thinking:</strong> Medicine trains you to reason about complex interacting systems (physiology, pathology, pharmacology). AI engineering is the same — models interact with data pipelines, user inputs, and infrastructure in complex ways. You already think this way.</li>
+<li><strong>Evidence-based reasoning:</strong> You know how to evaluate evidence quality, understand confidence intervals, and distinguish correlation from causation. This maps directly to AI evaluation, benchmark interpretation, and knowing when to trust model outputs.</li>
+<li><strong>Risk assessment:</strong> Clinical decision-making under uncertainty — weighing false positives vs false negatives, NNT, sensitivity/specificity — is exactly the framework for understanding AI safety, guardrails, and threshold-setting.</li>
+<li><strong>Domain expertise in the highest-value AI application:</strong> Health AI is the most regulated, highest-stakes, and fastest-growing AI application domain. You understand the domain — that's the hardest part to acquire.</li>
+<li><strong>Pattern recognition at exam-level speed:</strong> You've done this before. Passmedicine, question banks, active recall — you know how to acquire large bodies of knowledge efficiently. That's why this app exists.</li>
+</ul>
+
+<h2>What You Need to Learn (and What You Don't)</h2>
+
+<p>Here's the honest truth: AI engineering interviews for non-IC (individual contributor coder) roles test <strong>architectural thinking, concept mastery, and decision-making</strong> — not coding ability. You need to:</p>
+
+<p><strong>MUST master (tested in every interview):</strong></p>
+<ul>
+<li>How transformers/LLMs work (conceptually, not the math)</li>
+<li>When to use RAG vs fine-tuning vs agents vs prompting</li>
+<li>How RAG systems are built and their failure modes</li>
+<li>Prompt engineering techniques (CoT, few-shot, structured output)</li>
+<li>What embeddings are and how vector search works</li>
+<li>Evaluation approaches (how to know if your system works)</li>
+<li>The key tradeoffs (model size vs cost, precision vs recall, etc.)</li>
+<li>Production concerns (cost, latency, safety, monitoring)</li>
+</ul>
+
+<p><strong>SHOULD know (shows depth, differentiates you):</strong></p>
+<ul>
+<li>Fine-tuning mechanics (LoRA, QLoRA, RLHF/DPO concepts)</li>
+<li>Inference optimization (quantization, KV-cache, Flash Attention)</li>
+<li>Security (prompt injection, defense in depth)</li>
+<li>Agent architectures (MCP, function calling, multi-agent)</li>
+<li>Health AI specifics (HIPAA, FDA SaMD, clinical NLP, bias)</li>
+</ul>
+
+<p><strong>DON'T need (you're not interviewing for these roles):</strong></p>
+<ul>
+<li>Writing CUDA kernels or custom attention implementations</li>
+<li>Training foundation models from scratch</li>
+<li>Deep linear algebra / calculus (conceptual understanding sufficient)</li>
+<li>Low-level systems programming (C++, Rust for inference engines)</li>
+<li>Paper-level ML research (you need to understand findings, not derive proofs)</li>
+</ul>
+
+<h2>The Learning Path (4 Weeks to Interview-Ready)</h2>
+
+<h3>Week 1: Foundations (Modules 1-4)</h3>
+<p>Read the first four Learning Corner modules. By the end of week 1 you should be able to explain: what a transformer does, how attention works conceptually, how a base model becomes an assistant, and how RAG gives models access to your data. Do the linked MCQs after each module.</p>
+
+<h3>Week 2: Application Layer (Modules 5-9)</h3>
+<p>Agents, production concerns, embeddings, prompt engineering, evaluation. This is the meat of AI engineering — the decisions you'll make daily. By the end of week 2 you should be able to answer "How would you build X?" for any common AI application.</p>
+
+<h3>Week 3: Depth & Specialization (Modules 10-12 + Knowledge Pages)</h3>
+<p>The inference stack, security, and health AI. Plus: dive into the Knowledge Pages for detailed concept coverage. Focus on areas where you feel weakest — use the Weakest Areas feature in the MCQ section.</p>
+
+<h3>Week 4: Interview Prep (MCQs + Scenarios)</h3>
+<p>Hammer the MCQ bank. Focus on real-world scenario questions. Practice articulating tradeoffs out loud ("On one hand X, on the other Y, I'd choose Z because..."). Review flagged questions. Hit every topic until your accuracy is 80%+ across the board.</p>
+
+<h2>The Vocabulary Cheat Code</h2>
+
+<p>In interviews, sounding like you belong is half the battle. The glossary knowledge pages (Models, Training, RAG/Agents, Infrastructure) give you the precise vocabulary. Key terms you must use naturally:</p>
+
+<ul>
+<li>"Context window" not "memory" or "capacity"</li>
+<li>"Token" not "word" (and know they're different)</li>
+<li>"Inference" not "running" or "using"</li>
+<li>"Embeddings" not "vectors" when talking about meaning representation</li>
+<li>"Retrieval-augmented generation" not "search and answer"</li>
+<li>"Fine-tuning" not "training" (training = pre-training, fine-tuning = adaptation)</li>
+<li>"Hallucination" not "lying" or "making stuff up"</li>
+<li>"Latency" and "throughput" not "speed" (they're different things)</li>
+</ul>
+
+<h2>Your Unique Positioning</h2>
+
+<p>In an interview, lean into what makes you different: "I bring clinical domain expertise to AI engineering. I understand the regulatory landscape (FDA, HIPAA), I can evaluate whether AI outputs are clinically safe, and I know how to design human-in-the-loop systems because that's how medicine works — the AI assists, the clinician decides."</p>
+
+<p>That positioning — technical AI knowledge + deep domain expertise + regulatory understanding — is extremely rare and extremely valuable. Companies building health AI need people who understand both sides.</p>
+`
+},
+
 {
   title: "The Complete Picture: What AI Engineering Actually Is",
   description: "Start here. Understand the landscape, the layers, and where you fit in — before touching any technical detail.",
@@ -942,6 +1033,349 @@ Classify the sentiment:<br>
 <p>The mandate: <strong>disaggregated evaluation</strong>. Always report model performance separately by demographic subgroup. Set minimum performance thresholds per group. If any group falls below threshold, the system isn't ready for deployment. "95% overall accuracy" means nothing if it hides a 20-point gap between populations.</p>
 
 <blockquote>You've now covered the complete AI engineering curriculum — from transformers to clinical deployment. Use the MCQs to test retention, the knowledge pages for quick review, and come back to these modules whenever you need to refresh your understanding of how the pieces fit together.</blockquote>
+`
+},
+{
+  title: "Tokenization: How Models See Text (And Why It Matters More Than You Think)",
+  description: "The invisible preprocessing step that affects cost, quality, multilingual performance, and even why LLMs can't do arithmetic.",
+  level: "beginner",
+  readTime: "8 min",
+  linkedTopics: ["LLM Fundamentals"],
+  content: `
+<h2>Models Don't See Words</h2>
+
+<p>When you type "Understanding transformers" into an LLM, the model doesn't see two words. It sees something like ["Under", "standing", " transform", "ers"] — four <strong>tokens</strong>. Tokenization is the process of splitting text into these subword units, and it happens before the model processes anything.</p>
+
+<p>This isn't a minor detail. Tokenization affects how much your API calls cost (you pay per token), how much context fits in your prompt (measured in tokens, not words), how well the model handles different languages, and even why LLMs struggle with arithmetic.</p>
+
+<h2>How Tokenizers Are Built</h2>
+
+<p>The dominant method is <strong>Byte Pair Encoding (BPE)</strong>. The idea is elegant:</p>
+
+<ol>
+<li>Start with individual characters as your vocabulary: a, b, c, ..., z, A, B, ..., space, etc.</li>
+<li>Count the most frequent adjacent pair in your training text. Maybe "t" + "h" appears most often.</li>
+<li>Merge that pair into a new token: "th"</li>
+<li>Repeat: find the next most frequent pair (maybe "th" + "e" → "the"), merge it.</li>
+<li>Keep going until your vocabulary reaches a target size (typically 32k-100k tokens).</li>
+</ol>
+
+<p>The result: common words like "the" become single tokens. Common subwords like "ing", "tion", "pre" become single tokens. Rare words get split into pieces: "otolaryngology" might become ["ot", "olar", "yng", "ology"].</p>
+
+<div class="analogy"><strong>Medical analogy:</strong> Think of it like medical abbreviations. Common phrases become compressed: "MI" for myocardial infarction, "SOB" for shortness of breath. Uncommon terms stay long-form. The tokenizer does this automatically based on frequency in training data.</div>
+
+<h2>Why This Matters Practically</h2>
+
+<h3>Cost</h3>
+<p>API pricing is per token. A prompt that uses 1000 tokens costs the same regardless of whether that's 750 English words or 300 Chinese words (Chinese tokenizes less efficiently on most tokenizers, using more tokens per concept). At scale, tokenization efficiency directly affects your bill.</p>
+
+<h3>Context window</h3>
+<p>A 128k token context window holds roughly 96,000 English words — but only about 40,000-60,000 words in languages that tokenize less efficiently. Same context window, dramatically different capacity depending on language.</p>
+
+<h3>Arithmetic</h3>
+<p>The number "123456" might become tokens ["123", "456"] or ["12", "345", "6"] — there's no guarantee digits are split at meaningful boundaries. The model can't "see" individual digits reliably, which is why it struggles with arithmetic. It's like trying to add numbers when you can only see random chunks of digits through a keyhole.</p>
+
+<h3>Multilingual equity</h3>
+<p>Most tokenizers are trained primarily on English text, so English gets the most efficient compression. Other languages (especially non-Latin scripts) often use 2-3× more tokens per equivalent content. This means higher cost, less context capacity, and less "thinking room" for non-English users. It's a real equity issue in AI access.</p>
+
+<h2>The ~1.3 Rule</h2>
+<p>For English text: approximately 1.3 tokens per word on average. A 1000-word essay is roughly 1300 tokens. Code tends to tokenize less efficiently (~1.5-2 tokens per "word" equivalent). Use this for quick mental math when estimating costs and context usage.</p>
+`
+},
+{
+  title: "Context Engineering: The Art of What Goes Into the Prompt",
+  description: "Your prompt isn't just a question — it's a carefully assembled context. How to structure it, what to include, and what to leave out.",
+  level: "intermediate",
+  readTime: "9 min",
+  linkedTopics: ["Prompt Engineering", "RAG Systems"],
+  content: `
+<h2>The Prompt Is an Iceberg</h2>
+
+<p>Users see their question. But the prompt that actually reaches the model is much larger: a system prompt defining the AI's role and constraints, possibly few-shot examples, retrieved documents from RAG, conversation history, structured output instructions, and finally the user's question. Assembling this context — deciding what goes in, where it goes, and how much space each piece gets — is <strong>context engineering</strong>.</p>
+
+<p>This is one of the most impactful skills in AI engineering, and one of the least taught. The same model with the same question can give vastly different outputs depending on how the context is structured.</p>
+
+<h2>The Anatomy of a Production Prompt</h2>
+
+<h3>1. System prompt (top, static)</h3>
+<p>Defines who the AI is, what it can and can't do, and how it should behave. This is your "contract" with the model. Be specific: "You are a clinical decision support assistant. You help clinicians by summarizing relevant evidence from provided guidelines. You never diagnose. You always cite the specific guideline section. If the provided context doesn't contain relevant information, say so explicitly."</p>
+
+<p>Anti-pattern: vague system prompts like "You are a helpful assistant." This gives the model no constraints and no personality.</p>
+
+<h3>2. Few-shot examples (after system prompt, static)</h3>
+<p>If the task requires a specific output format or reasoning pattern, include 2-5 examples. These are more powerful than instructions because the model pattern-matches against them. Place the most representative example LAST (recency bias — it has the most influence).</p>
+
+<h3>3. Retrieved context (dynamic, from RAG or tools)</h3>
+<p>Documents retrieved for this specific query. Key decisions:</p>
+<ul>
+<li><strong>How many chunks?</strong> More context = more information but higher cost and risk of "lost in the middle." Typically 3-8 relevant chunks.</li>
+<li><strong>How to order them?</strong> Most relevant first (primacy effect) or last (recency effect). Research suggests most-relevant-first works better for most models.</li>
+<li><strong>Include metadata?</strong> Source name, date, section title — helps the model cite correctly and assess recency.</li>
+</ul>
+
+<h3>4. Conversation history (dynamic, growing)</h3>
+<p>Previous turns in the conversation. Grows with each exchange. At some point you must manage this: summarize old turns, drop irrelevant ones, or use a sliding window. An unmanaged conversation history eventually fills the context window and pushes out useful information.</p>
+
+<h3>5. User query (bottom, dynamic)</h3>
+<p>The actual question. Placed LAST for two reasons: (1) recency bias means the model attends to it strongly, (2) prompt caching works on the prefix — static content first, dynamic content last.</p>
+
+<h2>The Position Effect</h2>
+
+<p>Where you place information in the context changes how well the model uses it. Research shows a U-shaped attention curve:</p>
+
+<ul>
+<li><strong>Beginning:</strong> Strong attention (primacy). Put critical instructions and the most important context here.</li>
+<li><strong>Middle:</strong> Weakest attention ("lost in the middle"). Don't bury critical information here, especially in long contexts.</li>
+<li><strong>End:</strong> Strong attention (recency). Put the user's query and any high-priority context here.</li>
+</ul>
+
+<p>Practical implication: if you have 10 retrieved documents, don't just dump them in order. Put the most relevant ones at the start and end. Or better yet, re-rank and only include the top 3-5.</p>
+
+<h2>Prompt Caching: Saving Money Through Structure</h2>
+
+<p>Anthropic and OpenAI cache the computation of repeated prompt prefixes. If your system prompt + examples = 3000 tokens and they're identical across requests, the provider caches that computation. You pay full price once, then ~10% for the cached portion on subsequent calls.</p>
+
+<p>This only works if your prompt is structured correctly: <strong>static content first, dynamic content last</strong>. If the user's query is at the START of the prompt, the cache breaks on every request because the prefix changes. Structure matters for cost.</p>
+
+<h2>Context Window Management</h2>
+
+<p>Context windows are finite: 128k tokens (GPT-4), 200k tokens (Claude). Sound like a lot? In practice they fill faster than you think:</p>
+
+<ul>
+<li>System prompt: 500-2000 tokens</li>
+<li>Few-shot examples: 500-1500 tokens</li>
+<li>Retrieved context (RAG): 2000-8000 tokens</li>
+<li>Conversation history: grows unboundedly</li>
+<li>User query + response space: 500-4000 tokens</li>
+</ul>
+
+<p>A long conversation with RAG can easily hit 20-30k tokens. At scale, this means: higher costs, higher latency (processing more tokens), and potential quality degradation (attention diffusion over long contexts).</p>
+
+<p><strong>Management strategies:</strong> Sliding window on conversation history (keep last N turns), summarize old context, only retrieve the most relevant chunks (not all possible matches), drop few-shot examples for simple queries.</p>
+`
+},
+{
+  title: "The Model Landscape: Choosing the Right Model for the Job",
+  description: "GPT, Claude, Llama, Mistral, Gemini — who makes what, how they differ, and when to choose each. The practical buying guide.",
+  level: "beginner",
+  readTime: "9 min",
+  linkedTopics: ["LLM Fundamentals"],
+  content: `
+<h2>Not All Models Are Created Equal</h2>
+
+<p>Choosing the right model is one of your first architectural decisions, and it's more nuanced than "use the best one." Different models have different strengths, pricing, availability, and licensing. The right choice depends on your specific requirements.</p>
+
+<h2>The Major Players</h2>
+
+<h3>OpenAI (GPT series)</h3>
+<p><strong>Models:</strong> GPT-4o (flagship), GPT-4o-mini (cheap/fast), o1/o3 (reasoning-focused)</p>
+<p><strong>Strengths:</strong> Best-in-class for many tasks, excellent function calling, most mature API ecosystem, widest developer adoption.</p>
+<p><strong>Weaknesses:</strong> Closed-source (can't self-host or inspect), expensive at high volume, data goes to OpenAI's servers.</p>
+<p><strong>Use when:</strong> You need maximum capability and cost isn't the primary concern. Or for rapid prototyping (best developer tooling).</p>
+
+<h3>Anthropic (Claude series)</h3>
+<p><strong>Models:</strong> Claude Opus (most capable), Claude Sonnet (balanced), Claude Haiku (fast/cheap)</p>
+<p><strong>Strengths:</strong> Very long context window (200k tokens), excellent instruction following, strong safety/alignment, particularly good at nuanced analysis and writing.</p>
+<p><strong>Weaknesses:</strong> Closed-source, smaller ecosystem than OpenAI, sometimes overly cautious (refuses edge-case requests).</p>
+<p><strong>Use when:</strong> Long document processing, safety-sensitive applications, tasks requiring nuanced reasoning or long-form analysis.</p>
+
+<h3>Meta (Llama series)</h3>
+<p><strong>Models:</strong> Llama-3.1-8B, 70B, 405B</p>
+<p><strong>Strengths:</strong> Open-weight — download and run yourself. No data leaves your infrastructure. Free to use. Large community, extensive fine-tuned variants.</p>
+<p><strong>Weaknesses:</strong> Requires your own infrastructure (GPUs). 405B is expensive to serve. Lower capability than top closed models (but the gap is shrinking).</p>
+<p><strong>Use when:</strong> Data privacy requirements (HIPAA, on-premise), cost optimization at scale (no per-token API fees), need for customization (fine-tuning).</p>
+
+<h3>Mistral</h3>
+<p><strong>Models:</strong> Mistral-7B, Mixtral-8x7B (MoE), Mistral Large</p>
+<p><strong>Strengths:</strong> Punches above weight class — Mistral-7B competes with much larger models. Efficient architecture (GQA, sliding window). European company (EU data sovereignty). Open-weight for smaller models.</p>
+<p><strong>Weaknesses:</strong> Smaller ecosystem. Less proven at the largest scale.</p>
+<p><strong>Use when:</strong> Efficiency matters (smaller model, same quality), EU data requirements, self-hosted deployments where model size is constrained.</p>
+
+<h3>Google (Gemini series)</h3>
+<p><strong>Models:</strong> Gemini Ultra, Pro, Flash, Nano</p>
+<p><strong>Strengths:</strong> Natively multimodal (text + images + video + audio in one model), massive context window (up to 1M tokens in some versions), strong on coding and math.</p>
+<p><strong>Weaknesses:</strong> Less mature API compared to OpenAI, ecosystem still growing.</p>
+<p><strong>Use when:</strong> Multimodal applications (vision + text), very long context needs, Google Cloud integration.</p>
+
+<h2>The Decision Matrix</h2>
+
+<p>Think about these dimensions when choosing:</p>
+<ul>
+<li><strong>Privacy:</strong> Can data leave your infrastructure? No → self-host (Llama, Mistral). Yes → any model.</li>
+<li><strong>Cost sensitivity:</strong> High → route by complexity (cheap model for easy, expensive for hard). Or self-host open models.</li>
+<li><strong>Capability requirement:</strong> Maximum capability → GPT-4 / Claude Opus. Good enough → Llama-70B / Mistral.</li>
+<li><strong>Latency requirement:</strong> Real-time → smaller/faster models (Haiku, Flash, 8B). Batch → any model.</li>
+<li><strong>Regulatory:</strong> HIPAA/healthcare → self-hosted or HIPAA-eligible environments (Azure OpenAI, Vertex AI).</li>
+</ul>
+
+<p><strong>The secret most teams learn eventually:</strong> You'll use multiple models. Cheap models for simple tasks, expensive for complex. Open models for private data, closed for maximum capability. Model routing — directing queries to the right model — is a standard production pattern.</p>
+`
+},
+{
+  title: "Multi-Agent Systems and Orchestration Patterns",
+  description: "When one agent isn't enough — teams of specialized AI agents collaborating on complex tasks. Architectures, frameworks, and when to use them.",
+  level: "advanced",
+  readTime: "9 min",
+  linkedTopics: ["AI Agents & Tool Use"],
+  content: `
+<h2>Why One Agent Isn't Always Enough</h2>
+
+<p>A single agent with a massive tool set and broad instructions tends to fail in predictable ways: it gets confused about which tool to use, its context fills up with irrelevant conversation history, and its error rate compounds with task complexity. The solution: break complex workflows into <strong>specialized agents</strong> that each do one thing well.</p>
+
+<div class="analogy"><strong>Medical analogy:</strong> A single GP trying to simultaneously manage a complex cardiology case, interpret a specialist radiology scan, and handle a psychiatric assessment will perform worse than a coordinated team of specialists with a GP coordinating. Same principle: specialization + coordination > generalization.</div>
+
+<h2>Common Multi-Agent Patterns</h2>
+
+<h3>Supervisor/Worker</h3>
+<p>One "manager" agent receives the high-level task, breaks it into subtasks, delegates to specialized workers, collects results, and synthesizes the final output. The supervisor can use a more capable (expensive) model; workers can use cheaper models for their narrow tasks.</p>
+
+<p>Example: A research agent receives "Analyze competitor landscape." Supervisor breaks it into: (1) search for competitors (delegated to search worker), (2) summarize each competitor's offerings (summary worker), (3) compare pricing (analysis worker), (4) compile final report (writing worker).</p>
+
+<h3>Pipeline</h3>
+<p>Output of one agent feeds into the next in a linear chain. Each agent transforms or refines the output. Like a factory assembly line.</p>
+
+<p>Example: Researcher → Writer → Editor → Fact-checker. Each stage focuses on one quality dimension.</p>
+
+<h3>Debate / Adversarial</h3>
+<p>Two agents argue opposing sides of a question. A third agent judges. The adversarial pressure improves reasoning quality — blind spots of one agent get caught by the other.</p>
+
+<h3>Swarm / Handoff</h3>
+<p>Agents hand off to each other based on the task type. No central supervisor — each agent recognizes when a query is outside its specialty and routes to the appropriate specialist. OpenAI's Swarm pattern implements this.</p>
+
+<p>Example: A customer service swarm with billing-agent, technical-support-agent, and returns-agent. The initial agent classifies the request and hands off to the specialist.</p>
+
+<h2>Key Design Principles</h2>
+
+<p><strong>Separation of concerns:</strong> Each agent has a focused system prompt, specific tools, and possibly a different model. A coding agent should NOT have email access. A research agent doesn't need code execution. This limits the blast radius of failures and prompt injection.</p>
+
+<p><strong>Shared state management:</strong> Agents need to share context without duplicating the full conversation history. State management — what information is passed between agents and how — is the hardest part of multi-agent design. LangGraph's state machine approach handles this well.</p>
+
+<p><strong>Human-in-the-loop at boundaries:</strong> Between agents is a natural point for human approval. "Agent A found X and proposes action Y. Approve before Agent B executes?" This adds safety without slowing the individual agents.</p>
+
+<h2>Frameworks</h2>
+
+<ul>
+<li><strong>LangGraph:</strong> Models your application as a state graph. Nodes are agents/processing steps. Edges have conditions. Best for complex flows with branching and loops. State persistence built in.</li>
+<li><strong>CrewAI:</strong> Role-based teams. Define agents with roles ("Researcher", "Writer"), give them tools, define the workflow. Intuitive for team-like structures.</li>
+<li><strong>AutoGen:</strong> Conversation-driven collaboration. Agents talk to each other in a chat. Good for debate/discussion patterns.</li>
+<li><strong>OpenAI Swarm:</strong> Lightweight handoff pattern. Agents transfer control to each other. Minimalist, best for routing-style architectures.</li>
+</ul>
+
+<p><strong>When to use multi-agent vs single agent:</strong> If a single agent handles the task reliably, don't add complexity. Multi-agent when: the task has clearly separable subtasks, different subtasks need different tools/models, you need to limit each agent's permission scope, or the task is too complex for a single context window.</p>
+`
+},
+{
+  title: "Cost Engineering: Making AI Affordable at Scale",
+  description: "LLM costs can spiral fast. The practical playbook for cutting costs 60-80% without sacrificing quality — routing, caching, batching, and smart architecture.",
+  level: "advanced",
+  readTime: "8 min",
+  linkedTopics: ["Deployment & MLOps", "AI Engineering Architecture"],
+  content: `
+<h2>The Cost Problem</h2>
+
+<p>AI demos are cheap. AI at scale is expensive. A system that costs $0.03 per query seems fine until you have 100,000 queries/day — that's $3,000/day, $90,000/month. And costs compound: longer prompts, more retrieval, more tool calls, more retries. Teams are regularly surprised by their first production AI bill.</p>
+
+<p>The good news: there are well-proven strategies that can reduce costs 60-80% without sacrificing quality. The key insight is that not all queries need the same treatment.</p>
+
+<h2>The Cost Reduction Playbook</h2>
+
+<h3>1. Model Routing (Biggest Impact: 50-70% savings)</h3>
+
+<p>The single most impactful cost lever. Observation: 60-80% of queries in most applications are "easy" — simple factual questions, formatting requests, greetings, FAQs. These don't need GPT-4.</p>
+
+<p>Architecture: A lightweight classifier at the entry point scores query complexity. Easy queries go to a cheap model (GPT-4o-mini at $0.15/M input tokens). Hard queries go to an expensive model (GPT-4o at $2.50/M). If 80% of traffic hits the cheap model at 15× lower price, you save ~70%.</p>
+
+<p>Even simpler: for greetings and FAQ, don't call an LLM at all. Pattern matching or intent classification → canned responses. Zero LLM cost for those queries.</p>
+
+<h3>2. Prompt Caching (Easy Win: 30-50% on input tokens)</h3>
+
+<p>If your system prompt + few-shot examples = 3000 tokens (identical across requests), prompt caching means you pay full price for those 3000 tokens once, then ~10% on subsequent calls. Structure prompts with static prefix first, dynamic content last. Anthropic and OpenAI both offer this.</p>
+
+<p>Catch: the cache has a TTL (~5 minutes). Steady traffic keeps it warm; sporadic usage misses it. High-traffic applications benefit most.</p>
+
+<h3>3. Response Caching (Variable: 10-40% depending on query diversity)</h3>
+
+<p><strong>Exact-match caching:</strong> Same query → return same cached response. Simple, effective for FAQ-heavy traffic.</p>
+<p><strong>Semantic caching:</strong> Embed the query, check if a similar query was recently answered, return that cached response. Catches paraphrases: "What's your return policy?" and "How do I return an item?" hit the same cache entry. More complex to implement but higher hit rate.</p>
+
+<h3>4. Batch Processing (50% savings for non-urgent work)</h3>
+
+<p>Anthropic and OpenAI offer batch APIs at 50% cost. Submit requests in bulk, get results within 24 hours. Perfect for: offline evaluation, data processing, report generation, synthetic data creation — anything that doesn't need real-time response.</p>
+
+<h3>5. Prompt Optimization (10-30% savings)</h3>
+
+<p>Shorter prompts = fewer tokens = lower cost. Audit your prompts: remove verbose instructions, compress few-shot examples, use concise system prompts. Every token you remove saves money across every request.</p>
+
+<p>But don't sacrifice quality for brevity. Test after every prompt trim to ensure output quality is maintained.</p>
+
+<h3>6. Fine-tuning for Cost Reduction (Long-term: 80%+ savings)</h3>
+
+<p>If you have a working GPT-4 prompt, fine-tune a smaller model (Llama-8B, Mistral-7B) on GPT-4's outputs for your specific task. The small fine-tuned model often achieves 80-90% of GPT-4's quality at 10-20× lower per-query cost. High upfront cost (data curation + training), but massive long-term savings at scale.</p>
+
+<h2>Tracking and Alerting</h2>
+
+<p>You can't optimize what you can't measure. Track: cost per request, cost per user, cost per feature, token usage breakdown (input vs output vs cached), cost trends over time. Set alerts for anomalies — a prompt regression that doubles output length doubles your cost overnight.</p>
+`
+},
+{
+  title: "The Interview: What They'll Ask and How to Answer",
+  description: "The patterns, frameworks, and thinking strategies for AI engineering interviews — especially for non-traditional candidates.",
+  level: "beginner",
+  readTime: "10 min",
+  linkedTopics: ["AI Engineering Architecture"],
+  content: `
+<h2>What AI Engineering Interviews Test</h2>
+
+<p>Unlike software engineering interviews (which test coding ability) or ML research interviews (which test mathematical depth), AI engineering interviews test <strong>architectural thinking and practical judgment</strong>. Can you design a system? Can you reason about tradeoffs? Do you understand what actually matters in production?</p>
+
+<p>This is good news for non-traditional candidates. You won't be asked to implement backpropagation on a whiteboard. You WILL be asked to design a RAG system, reason about why your system is hallucinating, or propose how to reduce costs by 50%.</p>
+
+<h2>The Four Question Types</h2>
+
+<h3>1. System Design ("How would you build X?")</h3>
+
+<p>The most common question type. You'll be asked to design an AI-powered feature or application from scratch.</p>
+
+<p><strong>The framework:</strong></p>
+<ol>
+<li><strong>Clarify requirements:</strong> "What's the expected volume? What data is available? What's the latency requirement? How important is accuracy vs speed?" — asking good questions shows maturity.</li>
+<li><strong>Choose the approach:</strong> Prompting vs RAG vs fine-tuning vs agents. Explain WHY. "I'd start with RAG because the knowledge is in specific documents that change frequently and we need citations."</li>
+<li><strong>Design the architecture:</strong> Walk through the components. For RAG: data ingestion → chunking strategy → embedding model choice → vector store → retrieval → re-ranking → prompt construction → generation → guardrails.</li>
+<li><strong>Address failure modes:</strong> "What could go wrong?" Hallucination, retrieval failures, stale data, adversarial input. Show you've thought about the unhappy path.</li>
+<li><strong>Production considerations:</strong> Cost, latency, monitoring, evaluation. "I'd track faithfulness metrics and set up alerts for retrieval quality degradation."</li>
+</ol>
+
+<h3>2. Concept Explanation ("Explain X to me")</h3>
+
+<p>They want to know if you truly understand something — not if you memorized a definition.</p>
+
+<p><strong>The framework:</strong> Start with the WHY (what problem does it solve?), then the WHAT (how does it work at a high level?), then the HOW (key details). End with tradeoffs or practical implications.</p>
+
+<p>Example: "Explain LoRA."</p>
+<p>"LoRA solves the problem of fine-tuning being too expensive — full fine-tuning of a 70B model requires hundreds of GB of GPU memory. LoRA's insight is that the weight updates during fine-tuning are low-rank — they can be approximated by two small matrices instead of one large one. So you freeze the base model and only train these small adapter matrices. The key hyperparameter is rank — higher rank means more capacity but more parameters. At inference time, you can merge the adapters back into the base weights for zero additional latency. The practical impact: you can fine-tune a 70B model on a single GPU with QLoRA."</p>
+
+<h3>3. Troubleshooting ("The system is doing X, what's wrong?")</h3>
+
+<p>Scenario-based questions that test diagnostic thinking — familiar territory for a doctor.</p>
+
+<p><strong>The framework:</strong> Differential diagnosis. What could cause this symptom? What would I check to narrow it down? What's the most likely cause given the context?</p>
+
+<p>Example: "Our RAG system gives correct answers for most topics but consistently wrong for Product X."</p>
+<p>"Topic-specific failure suggests a data layer issue, not a model issue. My differential: (1) Product X documentation wasn't indexed — check the index for those docs. (2) The docs exist but were chunked badly — splitting key info across chunks. (3) Terminology mismatch — users call it 'Product X' but docs call it 'Enterprise Solution Pro.' I'd start by pulling traces for failed Product X queries to see what was actually retrieved."</p>
+
+<h3>4. Tradeoff Discussion ("Should we do A or B?")</h3>
+
+<p>Testing whether you can reason about both sides of a decision.</p>
+
+<p><strong>The framework:</strong> "A is better when [conditions], B is better when [conditions]. For your specific case, I'd ask [clarifying questions]. My recommendation would be [X] because [reasoning]."</p>
+
+<p>Never say "always A" or "always B." The senior answer is always conditional on context.</p>
+
+<h2>Handling "I Don't Know"</h2>
+
+<p>You will encounter questions about topics you haven't studied. The worst answer is to bluff. The best answer: "I'm not deeply familiar with that specific technique, but based on what I know about [related concept], I'd expect it to work by [reasonable inference]. I'd want to look into [specific thing] to verify."</p>
+
+<p>This shows intellectual honesty, reasoning ability, and awareness of your knowledge boundaries — all qualities interviewers value above encyclopedic knowledge.</p>
 `
 }
 ];
