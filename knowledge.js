@@ -987,5 +987,216 @@ const KNOWLEDGE_PAGES = [
     "Sizes: tiny (39M, real-time on CPU) to large-v3 (1.5B, most accurate, needs GPU)",
     "For LLM apps: Audio → Whisper (speech-to-text) → LLM → response. Standard pipeline for voice interfaces."
   ]
+},
+{
+  id: "kp_attention_variants",
+  title: "Attention Variants: MQA, GQA, MLA, and Sliding Window",
+  content: `<p>Standard multi-head attention (MHA) is expensive on memory because every head has its own Key and Value matrices that must be stored in the KV-cache. Several variants reduce this cost:</p>
+<p><strong>Multi-Query Attention (MQA):</strong> All query heads share a SINGLE Key head and a SINGLE Value head. 32 query heads but only 1 K/V head. Reduces KV-cache by 32×. Quality drops slightly because all queries attend through the same K/V lens. Used in PaLM, Falcon.</p>
+<p><strong>Grouped-Query Attention (GQA):</strong> A middle ground — groups of query heads share K/V heads. With 32 query heads and 8 K/V groups: each group of 4 query heads shares 1 K/V head. Reduces KV-cache by 4× with minimal quality loss. Used in Llama-2-70B, Llama-3, Mistral.</p>
+<p><strong>Multi-head Latent Attention (MLA, DeepSeek-V2):</strong> Compresses K/V into a low-rank latent representation before caching. Instead of storing full K/V vectors, stores a compressed version and decompresses on-the-fly during attention. Even more aggressive KV-cache reduction than GQA.</p>
+<p><strong>Sliding Window Attention (Mistral):</strong> Each token only attends to the previous W tokens (e.g., W=4096) rather than the full context. Lower layers use local attention; upper layers build on these to achieve effective long-range attention. Reduces attention from O(n²) toward O(n×W).</p>
+<p><strong>The pattern:</strong> All of these optimize the same bottleneck — KV-cache memory. Different approaches to the same tradeoff: memory savings vs. quality vs. implementation complexity.</p>`,
+  keyPoints: [
+    "MQA: 1 shared K/V head for all queries. Max memory savings, some quality loss. (PaLM, Falcon)",
+    "GQA: K/V heads shared within groups. Best balance of quality and memory. (Llama-2-70B, Mistral)",
+    "MLA: compress K/V to low-rank latent before caching. Most aggressive savings. (DeepSeek-V2)",
+    "Sliding Window: attend only to previous W tokens per layer. Reduces O(n²) toward O(n×W). (Mistral)"
+  ],
+  comparison: {
+    title: "Attention Variant Comparison",
+    headers: ["Variant", "KV-Cache Reduction", "Quality Impact", "Used In"],
+    rows: [
+      ["MHA (standard)", "None (baseline)", "None", "GPT, BERT, early models"],
+      ["MQA", "~32× (1 KV head)", "Slight drop", "PaLM, Falcon"],
+      ["GQA", "~4-8× (grouped)", "Minimal", "Llama-2/3, Mistral"],
+      ["MLA", "Variable (compressed)", "Minimal", "DeepSeek-V2"],
+      ["Sliding Window", "Linear (window size)", "Depends on W", "Mistral"]
+    ]
+  }
+},
+{
+  id: "kp_training_data",
+  title: "Training Data: Where LLMs Get Their Knowledge",
+  content: `<p>Pre-training data quality is arguably more important than model architecture. "Garbage in, garbage out" applies at trillion-token scale.</p>
+<p><strong>Common sources:</strong></p>
+<p>• <strong>Common Crawl:</strong> Massive web scrape (~250B pages). Raw quality is poor — mostly SEO spam, duplicates, and boilerplate. Requires heavy filtering and deduplication.</p>
+<p>• <strong>Wikipedia:</strong> High quality, well-structured factual content. Tiny relative to web data but disproportionately valuable.</p>
+<p>• <strong>Books:</strong> BookCorpus, Project Gutenberg. Long-form, high-quality prose that teaches narrative and reasoning structure.</p>
+<p>• <strong>Code:</strong> GitHub, Stack Overflow. Code data improves reasoning capabilities even for non-code tasks (chain-of-thought ability appears to benefit from code training).</p>
+<p>• <strong>Scientific papers:</strong> ArXiv, PubMed. Domain expertise for technical tasks.</p>
+<p><strong>Key processing steps:</strong></p>
+<p>• <strong>Deduplication:</strong> Remove exact and near-duplicate documents. MinHash/LSH for fuzzy dedup. Training on duplicates wastes compute and can cause memorization.</p>
+<p>• <strong>Quality filtering:</strong> Perplexity-based (use a trained LM to score quality), classifier-based (train a model on "good" vs "bad" text), heuristic (min length, language detection, remove boilerplate).</p>
+<p>• <strong>Toxicity removal:</strong> Filter harmful, biased, or offensive content. Imperfect but necessary.</p>
+<p>• <strong>Data mixture:</strong> The ratio of web:books:code:wiki matters enormously. Llama's research showed that upsampling high-quality sources (Wikipedia, books) during training, even if they're small relative to web data, significantly improves quality.</p>`,
+  keyPoints: [
+    "Common Crawl = massive but low quality. Wikipedia = tiny but disproportionately valuable. Code improves reasoning.",
+    "Deduplication is critical: duplicates waste compute and cause memorization. MinHash/LSH for fuzzy dedup.",
+    "Quality filtering: perplexity scoring, classifiers, heuristics (min length, language detection)",
+    "Data mixture ratio matters more than total volume. Upsampling high-quality sources (books, wiki) improves quality."
+  ]
+},
+{
+  id: "kp_instruction_tuning",
+  title: "Instruction Tuning and Chat Templates",
+  content: `<p><strong>Instruction tuning</strong> (or instruction fine-tuning, IFT) transforms a base model that can only continue text into an assistant that follows instructions. It's the bridge between a text completion engine and a chatbot.</p>
+<p><strong>What changes:</strong> A base model given "What is the capital of France?" might continue with "What is the capital of Germany? What is..." (it sees a quiz pattern and continues). An instruction-tuned model responds "The capital of France is Paris." It learns that questions expect answers, instructions expect execution.</p>
+<p><strong>Training data format:</strong> Pairs of (instruction/prompt, desired response). Datasets like Alpaca (52k), Dolly (15k), OpenOrca (millions), and FLAN provide these. Quality matters much more than quantity — 1000 high-quality diverse examples can outperform 100k mediocre ones.</p>
+<p><strong>Chat templates:</strong> Each model family uses a specific format to separate roles (system, user, assistant) in conversations. These are NOT standardized:</p>
+<p>• <strong>ChatML (OpenAI):</strong> &lt;|im_start|&gt;system\\n...&lt;|im_end|&gt;</p>
+<p>• <strong>Llama:</strong> [INST] user message [/INST] assistant response</p>
+<p>• <strong>Mistral/Mixtral:</strong> Similar but with slight variations</p>
+<p><strong>Why templates matter:</strong> Using the wrong chat template with a model is a common bug that causes degraded performance. The model was trained to recognize specific tokens as role separators — if you use the wrong format, it doesn't understand the conversation structure.</p>`,
+  keyPoints: [
+    "Instruction tuning = teach the model to FOLLOW instructions rather than CONTINUE text. Base model → assistant.",
+    "Quality >> quantity for instruction data. 1000 excellent examples can beat 100k mediocre ones.",
+    "Chat templates are model-specific (ChatML, Llama format). Wrong template = degraded performance.",
+    "Common bug: using a chat template from model A with model B. Always check the model card for the expected format."
+  ]
+},
+{
+  id: "kp_langfuse",
+  title: "LLM Observability: Tracing, Monitoring, and Debugging in Production",
+  content: `<p><strong>LLM observability</strong> gives you visibility into what your LLM application is doing in production — which is critical because LLMs are non-deterministic and failures are often subtle (wrong but plausible answers, not crashes).</p>
+<p><strong>What to monitor:</strong></p>
+<p>• <strong>Latency:</strong> Time to first token (TTFT), total generation time, retrieval time for RAG. Set SLOs and alert when exceeded.</p>
+<p>• <strong>Token usage and cost:</strong> Input tokens, output tokens, cached tokens, cost per request. Track trends to catch runaway costs.</p>
+<p>• <strong>Quality signals:</strong> User feedback (thumbs up/down), regeneration rate (how often users retry), copy rate, conversation length.</p>
+<p>• <strong>Errors:</strong> API failures, rate limit hits, content filter triggers, format parsing failures.</p>
+<p><strong>Tracing:</strong> Follow a request through the entire pipeline: user input → retrieval → prompt construction → LLM call → output parsing → response. Each step is a "span" with its own timing and metadata. When something goes wrong, the trace shows WHERE it broke.</p>
+<p><strong>Tools:</strong></p>
+<p>• <strong>Langfuse:</strong> Open-source LLM observability. Traces, scoring, prompt management, cost tracking. Self-hostable.</p>
+<p>• <strong>LangSmith:</strong> LangChain's observability platform. Deep integration with LangChain/LangGraph.</p>
+<p>• <strong>Braintrust, Helicone:</strong> Other options with different strengths (eval, proxy-based logging).</p>
+<p><strong>Why this matters:</strong> You can't improve what you can't measure. Without observability, you discover quality problems from user complaints. With it, you catch regressions before users notice and have the traces to debug them.</p>`,
+  keyPoints: [
+    "Monitor: latency (TTFT), token usage/cost, quality signals (thumbs up/down, retry rate), errors",
+    "Tracing: follow request through entire pipeline (retrieval → prompt → LLM → parsing). Find WHERE failures happen.",
+    "Langfuse (open-source, self-hostable) and LangSmith (LangChain-integrated) are the main tools.",
+    "LLMs fail subtly (wrong but plausible) not loudly (crashes). Observability catches quality regressions before users do."
+  ]
+},
+{
+  id: "kp_evals_pipeline",
+  title: "Building an Evaluation Pipeline: From Ad-Hoc Testing to Systematic Quality",
+  content: `<p>Production LLM applications need systematic evaluation — not just "try a few prompts and see if it looks good." An <strong>evaluation pipeline</strong> runs automatically and catches regressions before they reach users.</p>
+<p><strong>Components of an eval pipeline:</strong></p>
+<p>• <strong>Test set:</strong> Curated examples with known-good outputs. Start with 50-100 high-quality examples covering your key use cases and edge cases. Grow over time from production failures.</p>
+<p>• <strong>Metrics:</strong> Automatic scores for each example. Options: exact match (classification), BLEU/ROUGE (text similarity), LLM-as-judge (quality/correctness), Ragas metrics (for RAG), custom heuristics (contains required fields, within length limit).</p>
+<p>• <strong>Assertions:</strong> Hard pass/fail criteria. "Must include a citation", "Must be valid JSON", "Must not exceed 500 tokens." These catch structural failures definitively.</p>
+<p>• <strong>Comparison:</strong> Run the SAME test set against the current version and the candidate version. Diff the results. If quality drops on >5% of examples, block the change.</p>
+<p><strong>When to run evals:</strong></p>
+<p>• Before deploying a prompt change (prompt regression testing)</p>
+<p>• Before updating the model version (model regression testing)</p>
+<p>• Before changing the RAG pipeline (retrieval regression testing)</p>
+<p>• Nightly on production traffic samples (drift detection)</p>
+<p><strong>The hard truth:</strong> Evals are the closest thing to unit tests for LLM applications. Without them, you're deploying blind. Start simple (20 test cases, LLM-as-judge), iterate based on real failures.</p>`,
+  keyPoints: [
+    "Eval pipeline = test set + metrics + assertions + comparison. Run before every prompt/model/pipeline change.",
+    "Start with 50-100 curated examples. Grow from production failures. Quality of test set > quantity.",
+    "Assertions (hard pass/fail) catch structural failures. LLM-as-judge catches quality issues. Use both.",
+    "Evals are the closest thing to unit tests for LLM apps. Without them, you're deploying blind."
+  ]
+},
+{
+  id: "kp_vllm_deep",
+  title: "vLLM Deep Dive: PagedAttention and Continuous Batching",
+  content: `<p><strong>vLLM</strong> is the most widely used open-source LLM serving engine. Its two core innovations — PagedAttention and continuous batching — together achieve 2-4× higher throughput than naive serving.</p>
+<p><strong>PagedAttention in detail:</strong> In standard serving, when a request arrives, the system pre-allocates a contiguous memory block for the KV-cache sized for the MAXIMUM possible sequence length (e.g., 4096 tokens). But most responses are shorter — so most of that memory is wasted. It's like reserving an entire restaurant for a 2-person dinner.</p>
+<p>PagedAttention breaks the KV-cache into small fixed-size "pages" (blocks) allocated on-demand as the sequence grows. No pre-allocation waste. Non-contiguous in physical memory but contiguous in logical addressing — exactly like OS virtual memory with page tables. Memory utilization jumps from ~50% to ~95%.</p>
+<p><strong>Continuous batching in detail:</strong> Static batching groups N requests, processes them ALL until the LONGEST one finishes. If request A generates 10 tokens and request B generates 500, request A's GPU slot sits idle for 490 steps. Continuous batching immediately fills completed slots with new requests. The GPU always has maximum work to do.</p>
+<p><strong>Other vLLM features:</strong> Tensor parallelism (split model across GPUs), speculative decoding, prefix caching (reuse KV-cache for common prompt prefixes), structured output (guided generation), LoRA serving (hot-swap adapters).</p>
+<p><strong>When to use vLLM:</strong> Production GPU serving with concurrent requests. If you're serving a model to multiple users and care about throughput/latency, vLLM is the default choice.</p>`,
+  keyPoints: [
+    "PagedAttention: allocate KV-cache pages on-demand (like OS virtual memory). 50% → 95% memory utilization.",
+    "Continuous batching: fill completed request slots immediately with new requests. GPU never idles.",
+    "Together: 2-4× throughput improvement over naive serving. More concurrent users per GPU.",
+    "Also supports: tensor parallelism, speculative decoding, prefix caching, LoRA hot-swap, structured output"
+  ]
+},
+{
+  id: "kp_embedding_advanced",
+  title: "Advanced Embedding Concepts: Matryoshka, Instruction-Tuned, and Cross-Lingual",
+  content: `<p>Modern embedding models have evolved well beyond basic sentence-transformers. Understanding these advances helps you choose the right model for your RAG or search system.</p>
+<p><strong>Instruction-tuned embeddings:</strong> Models like E5-Instruct and GTE prepend a task-specific instruction to the input before embedding. "Retrieve relevant passages for: {query}" produces a different embedding than "Classify the sentiment of: {query}". The same text gets different embeddings depending on the task instruction. This improves retrieval quality because the embedding is optimized for the specific task.</p>
+<p><strong>Matryoshka embeddings:</strong> Named after Russian nesting dolls. The embedding is designed so that the first N dimensions are a valid lower-dimensional embedding. A 1536-dim model can be truncated to 768, 384, or even 128 dims with graceful quality degradation. Use full dims for your vector store, truncated dims for quick filtering or when storage is constrained.</p>
+<p><strong>Cross-lingual embeddings:</strong> Models trained to place equivalent texts in different languages at similar positions in embedding space. "The weather is nice" and "Das Wetter ist schön" get similar vectors. Enables multilingual search without translating queries.</p>
+<p><strong>Late interaction (ColBERT):</strong> Instead of one vector per document, produces one vector per TOKEN. Retrieval computes token-level interactions between query and document tokens. More expensive but much more accurate — captures fine-grained relevance that single-vector models miss.</p>`,
+  keyPoints: [
+    "Instruction-tuned: prepend task description before embedding. Same text → different embedding per task. (E5, GTE)",
+    "Matryoshka: truncate dimensions gracefully (1536 → 768 → 384). Flexible storage/quality tradeoff.",
+    "Cross-lingual: equivalent texts in different languages → similar vectors. Multilingual search without translation.",
+    "ColBERT (late interaction): one vector per token, not per document. Much more accurate but more expensive."
+  ]
+},
+{
+  id: "kp_grpo",
+  title: "GRPO: Group Relative Policy Optimization",
+  content: `<p><strong>GRPO (Group Relative Policy Optimization)</strong> is an alignment technique pioneered by DeepSeek that simplifies RLHF further by eliminating the need for both a reward model AND a separate value/critic network.</p>
+<p><strong>How standard PPO works:</strong> PPO (used in RLHF) requires: (1) a reward model to score outputs, (2) a critic/value network to estimate expected future reward for each state, (3) advantage estimation (how much better was this action than expected). The critic network is large (often same size as the policy model) and expensive to train.</p>
+<p><strong>GRPO's insight:</strong> Instead of a learned critic, generate a GROUP of K responses for each prompt, score them all with the reward model, then estimate advantage by comparing each response to the group average. Responses better than the group mean get positive advantage (reinforced); worse ones get negative advantage (suppressed).</p>
+<p><strong>Why this matters:</strong></p>
+<p>• <strong>No critic network:</strong> Saves the memory and compute of maintaining a second large model. In PPO, the critic is often as large as the policy model — GRPO halves the memory requirement.</p>
+<p>• <strong>Simpler training:</strong> Fewer hyperparameters, more stable optimization. No critic warmup or value function bootstrapping.</p>
+<p>• <strong>DeepSeek-R1 used GRPO:</strong> This technique was key to training DeepSeek's reasoning model, showing it works at scale for complex reasoning tasks.</p>`,
+  keyPoints: [
+    "GRPO: generate K responses per prompt, score all, advantage = score - group mean. No critic network needed.",
+    "Eliminates the critic/value network from PPO — halves memory, simpler training, fewer hyperparameters",
+    "Better than group average → reinforced. Worse → suppressed. Relative ranking within the group.",
+    "Used by DeepSeek-R1 for reasoning. Scales to complex tasks without the complexity of full PPO."
+  ]
+},
+{
+  id: "kp_rag_production",
+  title: "Production RAG: Real-World Challenges and Solutions",
+  content: `<p>Moving RAG from a prototype to production surfaces challenges that don't appear in demos. Here are the ones that catch teams off guard:</p>
+<p><strong>Stale data:</strong> Documents change. If your index isn't updated, the model answers from outdated information. Solution: incremental indexing with change detection, or scheduled full re-indexing. Track document versions.</p>
+<p><strong>Multi-tenancy:</strong> Different users should only see their own documents. Solution: metadata filtering on user/org ID at query time. Never rely on the LLM to enforce access control — it will leak data if prompted cleverly.</p>
+<p><strong>Table and image handling:</strong> PDFs contain tables that break when chunked as text. Images in documents are lost entirely. Solution: specialized parsers (Unstructured.io, Azure Document Intelligence) that extract tables as structured data and describe images with vision models.</p>
+<p><strong>Conflicting information:</strong> Multiple documents may contradict each other (old policy vs new policy). The LLM can't resolve this without help. Solution: metadata timestamps, prefer newer documents, or surface conflicts to the user.</p>
+<p><strong>The "I don't know" problem:</strong> When the retrieved context doesn't contain the answer, the model should say so rather than hallucinate. But RLHF-trained models are biased toward being "helpful" (i.e., always answering). Solution: explicit instructions + faithfulness guardrails + test cases specifically for "unanswerable" queries.</p>
+<p><strong>Cost at scale:</strong> Embedding every query + retrieving + packing context + generating = many API calls. Solution: semantic caching (reuse answers for similar queries), prompt caching (reuse prefix computation), model routing (cheap model for easy queries).</p>`,
+  keyPoints: [
+    "Stale data: documents change but index doesn't. Need incremental re-indexing with version tracking.",
+    "Multi-tenancy: filter by user/org at retrieval time. Never rely on the LLM to enforce access control.",
+    "Tables/images in PDFs: use specialized parsers (Unstructured.io). Standard text splitting destroys table structure.",
+    "The 'I don't know' problem: RLHF makes models try to always answer. Explicitly test for unanswerable queries."
+  ]
+},
+{
+  id: "kp_dspy",
+  title: "DSPy: Programming (Not Prompting) Language Models",
+  content: `<p><strong>DSPy</strong> is a framework that replaces hand-crafted prompts with programmatic optimization. Instead of tweaking prompt wording manually, you define the task as a program and DSPy automatically finds the best prompt/pipeline configuration.</p>
+<p><strong>The problem with manual prompting:</strong> Prompt engineering is trial-and-error. You tweak wording, add examples, rearrange instructions — all manually. When you change the model, update the pipeline, or shift the task slightly, prompts often need re-engineering. It doesn't scale.</p>
+<p><strong>DSPy's approach:</strong></p>
+<p>• <strong>Signatures:</strong> Define what the LLM should do declaratively: "question -> answer" or "context, question -> reasoning, answer". No prompt text — just input/output specification.</p>
+<p>• <strong>Modules:</strong> Composable building blocks (ChainOfThought, ReAct, Retrieve) that define HOW the LLM processes the signature. Like PyTorch nn.Module but for LLM programs.</p>
+<p>• <strong>Optimizers (Teleprompters):</strong> Automatically search for the best prompt instructions, few-shot examples, and pipeline configurations. Given a metric function and training examples, the optimizer tries many prompt variations and keeps what works best.</p>
+<p><strong>Why it matters:</strong> DSPy separates the WHAT (task definition) from the HOW (prompt optimization). When you swap models, re-run the optimizer — it finds new optimal prompts automatically. This makes LLM pipelines more robust, portable, and maintainable than hand-crafted prompts.</p>`,
+  keyPoints: [
+    "DSPy = programmatic prompt optimization. Define WHAT (signatures), compose HOW (modules), auto-optimize prompts.",
+    "Replaces manual prompt tweaking with systematic search for optimal instructions and examples.",
+    "When you change models, re-run the optimizer → new optimal prompts automatically. No manual re-engineering.",
+    "Signatures (input→output specs) + Modules (ChainOfThought, Retrieve) + Optimizers (auto-tune prompts)"
+  ]
+},
+{
+  id: "kp_eu_ai_act",
+  title: "AI Regulation: The EU AI Act and What It Means",
+  content: `<p>The <strong>EU AI Act</strong> (effective 2024-2026, phased rollout) is the world's first comprehensive AI regulation. AI engineers building products for European users need to understand its framework.</p>
+<p><strong>Risk-based tiers:</strong></p>
+<p>• <strong>Unacceptable risk (BANNED):</strong> Social scoring by governments, real-time facial recognition in public spaces (with exceptions), manipulation of vulnerable populations.</p>
+<p>• <strong>High risk (HEAVY REGULATION):</strong> AI in hiring/employment, credit scoring, education, law enforcement, critical infrastructure. Requires: risk assessments, data governance, human oversight, transparency, accuracy monitoring, documentation.</p>
+<p>• <strong>Limited risk (TRANSPARENCY):</strong> Chatbots, deepfakes, emotion recognition. Must disclose to users that they're interacting with AI. Content generated by AI must be labeled.</p>
+<p>• <strong>Minimal risk (NO REGULATION):</strong> Spam filters, AI in games, recommendation systems. Free to use without restrictions.</p>
+<p><strong>General-Purpose AI Models (like GPT, Llama):</strong> Providers of foundation models must: document training data and methods, comply with copyright law, publish a summary of training data, and assess systemic risks for high-capability models (trained with >10²⁵ FLOPs).</p>
+<p><strong>For AI engineers:</strong> If you're building AI products for EU users, you need to: (1) classify your system's risk level, (2) implement required transparency measures (always disclose AI), (3) maintain documentation of your system's design and training, (4) enable human oversight for high-risk applications.</p>`,
+  keyPoints: [
+    "Four risk tiers: Unacceptable (banned), High (heavy regulation), Limited (transparency required), Minimal (free)",
+    "Chatbots = Limited risk: MUST disclose to users they're talking to AI. AI-generated content must be labeled.",
+    "High-risk (hiring, credit, law enforcement): requires risk assessments, human oversight, accuracy monitoring",
+    "Foundation model providers: must document training data, comply with copyright, assess systemic risks"
+  ]
 }
 ];

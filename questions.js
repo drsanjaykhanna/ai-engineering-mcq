@@ -2098,5 +2098,244 @@ const QUESTIONS = [
     "Incorrect. System instructions are standard and recommended. The issue is where they're positioned relative to dynamic content.",
     "Incorrect. Examples are valuable for few-shot prompting. The issue is ordering, not inclusion."
   ]
+},
+// === NEW QUESTIONS FOR EXPANDED KNOWLEDGE PAGES ===
+{
+  id: "lf33", topic: "LLM Fundamentals", pageId: "kp_attention_variants",
+  question: "What is the difference between Multi-Query Attention (MQA) and Grouped-Query Attention (GQA)?",
+  options: [
+    "MQA uses more memory than GQA",
+    "MQA shares ONE K/V head across ALL query heads; GQA shares K/V within GROUPS of query heads — less aggressive but better quality",
+    "GQA is faster than MQA",
+    "They produce identical results with different implementations"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. MQA uses LESS memory (only 1 K/V head vs multiple in GQA). The tradeoff is quality.",
+    "Correct. MQA is the extreme: all 32 query heads share 1 K/V head → 32× cache reduction but noticeable quality drop. GQA is the middle ground: groups of 4 query heads share 1 K/V head → 4-8× reduction with minimal quality impact. Modern models (Llama-2-70B, Llama-3, Mistral) choose GQA as the best balance.",
+    "Incorrect. MQA is slightly faster (fewer K/V computations) but the difference is small. The main distinction is quality vs memory tradeoff.",
+    "Incorrect. They produce different results because different amounts of K/V information are shared. MQA's aggressive sharing means all queries attend through the same lens; GQA preserves more diversity."
+  ]
+},
+{
+  id: "pt9", topic: "Pre-training & Data", pageId: "kp_training_data",
+  question: "Why is code data included in LLM pre-training even for models not primarily intended for coding?",
+  options: [
+    "Code is cheap to obtain",
+    "Training on code improves reasoning and chain-of-thought capabilities even for non-code tasks",
+    "It's needed for the tokenizer to work properly",
+    "Regulatory requirements mandate including code data"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While code is available on GitHub, cost isn't the reason it's included. It's included for its cognitive training value.",
+    "Correct. Code has explicit logical structure: if/then/else, loops, function decomposition. Training on code appears to improve the model's ability to reason step-by-step, follow complex instructions, and decompose problems — even when the task has nothing to do with programming. Research shows code-trained models outperform code-free models on reasoning benchmarks.",
+    "Incorrect. Tokenizers work on any text. Code doesn't affect tokenizer functionality.",
+    "Incorrect. No regulation mandates training data composition. This is an empirical finding about what improves model quality."
+  ]
+},
+{
+  id: "pt10", topic: "Pre-training & Data", pageId: "kp_training_data",
+  question: "What is the purpose of deduplication in pre-training data pipelines?",
+  options: [
+    "To reduce storage costs",
+    "To prevent the model from memorizing repeated content and to avoid wasting compute on redundant data",
+    "To ensure equal representation of all languages",
+    "To comply with copyright law"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While dedup does reduce data size, storage is cheap. The main concerns are model quality and compute efficiency.",
+    "Correct. Training on the same content multiple times: (1) wastes compute on redundant learning signal, (2) causes the model to memorize that specific content (privacy/copyright risk), (3) skews the model's distribution toward duplicated content (it thinks those patterns are more common than they are). Dedup improves both quality and training efficiency.",
+    "Incorrect. Language balance is handled by data mixture ratios, not deduplication.",
+    "Incorrect. While dedup may help with copyright (less memorization), that's not its primary purpose. It's about training quality."
+  ]
+},
+{
+  id: "ft14", topic: "Fine-tuning & Alignment", pageId: "kp_instruction_tuning",
+  question: "What happens if you use the wrong chat template when prompting a fine-tuned model?",
+  options: [
+    "The model crashes with an error",
+    "The model doesn't recognize the conversation structure and produces degraded, often incoherent responses",
+    "The model automatically detects and adapts to any template",
+    "Nothing — chat templates are just formatting preferences"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The model won't crash — it just sees the input as meaningless token patterns rather than a structured conversation.",
+    "Correct. The model was trained to recognize specific special tokens as role boundaries ([INST], <|im_start|>, etc.). If you use the wrong tokens, the model doesn't understand where the user's turn ends and its turn begins. It might try to continue the user's message, repeat the system prompt, or generate incoherent text. A common production bug that's easy to miss.",
+    "Incorrect. Models don't auto-detect templates. They respond to whatever token patterns they were trained with. Using the wrong ones gives nonsense.",
+    "Incorrect. Chat templates are NOT just formatting — they're critical structural signals the model was trained to recognize. Wrong template = broken model behavior."
+  ]
+},
+{
+  id: "ft15", topic: "Fine-tuning & Alignment", pageId: "kp_grpo",
+  question: "What does GRPO eliminate from the RLHF pipeline compared to PPO?",
+  options: [
+    "The reward model",
+    "The critic/value network — by using group-relative advantages instead",
+    "The training data",
+    "The KL divergence constraint"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. GRPO still uses a reward model to score outputs. It eliminates the CRITIC, not the reward model.",
+    "Correct. PPO requires a critic network (often same size as the policy model) to estimate value/advantage. GRPO replaces this with a simpler approach: generate K responses, score all with reward model, compute advantage as (score - group mean). No critic to train or maintain. This halves the memory requirement and simplifies training significantly.",
+    "Incorrect. GRPO still needs prompts to generate responses from. It changes how advantage is estimated, not what data is used.",
+    "Incorrect. GRPO still applies a KL penalty to prevent the model from straying too far from the reference policy, same as PPO."
+  ]
+},
+{
+  id: "rag14", topic: "RAG Systems", pageId: "kp_rag_production",
+  question: "A RAG system serves multiple customers who each upload private documents. What's the critical security requirement?",
+  options: [
+    "Encrypt all documents at rest",
+    "Filter retrieval results by tenant ID — NEVER rely on the LLM to enforce access control",
+    "Use a separate vector database per customer",
+    "Add a disclaimer that the system may share data"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Encryption at rest protects against storage breaches but doesn't prevent cross-tenant data leakage during retrieval. The LLM can still see wrong-tenant docs.",
+    "Correct. Retrieval-level filtering is the ONLY reliable approach. Add tenant_id as metadata to every chunk, and filter on it during vector search BEFORE results reach the LLM. Never rely on the LLM to self-censor ('only show results from customer X') — prompt injection can bypass this. Access control must be at the infrastructure level, not the prompt level.",
+    "Incorrect. While separate databases work, they don't scale well with many tenants. Metadata filtering within one database is the standard approach and is equally secure when implemented correctly.",
+    "Incorrect. A disclaimer doesn't fix the security issue — you're still leaking private data. This is a technical problem requiring a technical solution."
+  ]
+},
+{
+  id: "rag15", topic: "RAG Systems", pageId: "kp_rag_production",
+  question: "A team's RAG system handles PDFs with complex tables. The table data retrieval is terrible. Why?",
+  options: [
+    "PDFs can't be indexed for RAG",
+    "Standard text splitting destroys table structure — rows and columns become meaningless text fragments",
+    "Table data requires a larger embedding model",
+    "The LLM can't understand tabular information"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. PDFs absolutely can be indexed for RAG. The issue is HOW they're processed, not whether they can be.",
+    "Correct. When you extract text from a PDF table and split it into chunks, the spatial relationships that give tables meaning (which value belongs to which column/row) are lost. '25%' next to 'Q3 Revenue' has meaning; '25%' in a random text chunk doesn't. Solution: use specialized parsers (Unstructured.io, Azure Document Intelligence) that preserve table structure as structured data (markdown tables, JSON).",
+    "Incorrect. Embedding model size doesn't help if the input text has lost its structural meaning. The problem is upstream in parsing, not in embedding.",
+    "Incorrect. LLMs understand tables well when presented as markdown or structured format. The problem is that table structure is lost during extraction, not that the LLM can't process it."
+  ]
+},
+{
+  id: "pe11", topic: "Prompt Engineering", pageId: "kp_dspy",
+  question: "What is DSPy's main advantage over manual prompt engineering?",
+  options: [
+    "It generates prompts faster",
+    "It automatically optimizes prompts through systematic search — making pipelines portable across models without manual re-engineering",
+    "It produces shorter prompts",
+    "It eliminates the need for few-shot examples"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. DSPy's optimization process actually takes longer than manually writing a prompt. The benefit is in quality and maintainability, not speed of creation.",
+    "Correct. With DSPy, you define WHAT you want (signatures) not HOW to prompt for it. When you change models (GPT-4 → Llama), re-run the optimizer and it finds new optimal prompts automatically. Manual prompting requires you to re-engineer prompts by hand for every model change. DSPy makes LLM pipelines more like software (programmatic, testable, portable) and less like art (fragile, manual, model-specific).",
+    "Incorrect. DSPy-optimized prompts may actually be longer (they include optimized instructions and examples). The benefit is quality and portability, not brevity.",
+    "Incorrect. DSPy often INCLUDES few-shot examples — the optimizer selects the best ones. It automates example selection rather than eliminating examples."
+  ]
+},
+{
+  id: "dp9", topic: "Deployment & MLOps", pageId: "kp_langfuse",
+  question: "Why is LLM observability harder than traditional application monitoring?",
+  options: [
+    "LLMs are slower than traditional applications",
+    "LLM failures are often subtle (wrong but plausible output) rather than loud (crashes, errors) — you can't catch them with status codes alone",
+    "LLMs generate too much log data",
+    "LLM APIs don't support monitoring"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While latency monitoring is important, the fundamental challenge isn't about speed — it's about output quality.",
+    "Correct. A traditional API either returns 200 (success) or 500 (error). An LLM can return 200 with a perfectly fluent response that's completely wrong. You can't catch hallucination, irrelevance, or unfaithfulness from HTTP status codes. You need content-level quality metrics, user feedback signals, and LLM-based evaluation — which is fundamentally harder than checking if a function returned an error.",
+    "Incorrect. Log volume is manageable. The challenge is that you need SEMANTIC evaluation of outputs, not just volume management.",
+    "Incorrect. LLM APIs support standard monitoring. The gap is in evaluating output QUALITY, not in technical monitoring capabilities."
+  ]
+},
+{
+  id: "dp10", topic: "Deployment & MLOps", pageId: "kp_vllm_deep",
+  question: "In vLLM's PagedAttention, why does memory utilization jump from ~50% to ~95%?",
+  options: [
+    "It uses a more efficient data format",
+    "It eliminates pre-allocation waste by allocating KV-cache pages on-demand as sequences grow, not upfront for max length",
+    "It compresses the KV-cache",
+    "It shares memory between requests"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The data format (FP16/BF16) is the same. The improvement is in allocation strategy, not data encoding.",
+    "Correct. Standard serving pre-allocates max_seq_len × per-token-cache for EVERY request, even if most responses are short. A request generating 50 tokens wastes 4046 tokens' worth of pre-allocated cache (if max is 4096). PagedAttention allocates small pages only as needed — a 50-token response uses exactly 50 tokens of cache. No waste from unused pre-allocation.",
+    "Incorrect. PagedAttention doesn't compress data. It manages allocation efficiently — using pages instead of contiguous blocks.",
+    "Incorrect. While prefix caching shares some memory across requests with common prefixes, the main ~50%→~95% improvement is from eliminating per-request pre-allocation waste."
+  ]
+},
+{
+  id: "ev6", topic: "Evaluation & Benchmarking", pageId: "kp_evals_pipeline",
+  question: "A team changes their RAG system's chunking strategy. What should they do before deploying?",
+  options: [
+    "Nothing — chunking changes don't affect output quality",
+    "Run their evaluation pipeline against the test set and compare results to the previous version, blocking deployment if quality drops",
+    "Just test with one example prompt",
+    "Ask the LLM if the change is good"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Chunking strategy is one of the highest-impact changes in a RAG system. It directly affects retrieval quality which directly affects answer quality.",
+    "Correct. Any change to the RAG pipeline (chunking, embedding model, retrieval strategy) can cause regressions. Run the existing test set against both the old and new versions, compare metric scores, and only deploy if quality is maintained or improved. This is 'retrieval regression testing' — equivalent to running unit tests before deploying code changes.",
+    "Incorrect. One example proves nothing about systematic quality. You need diverse test cases covering edge cases and common queries.",
+    "Incorrect. LLMs can't reliably evaluate their own pipeline changes. You need ground-truth test cases with known-good answers."
+  ]
+},
+{
+  id: "em5", topic: "Embeddings & Vector Search", pageId: "kp_embedding_advanced",
+  question: "What are Matryoshka embeddings and when would you use the truncated version?",
+  options: [
+    "Embeddings that only work in Russian language",
+    "Embeddings designed so the first N dimensions are a valid lower-dimensional representation — use truncated for fast filtering or storage-constrained scenarios",
+    "Embeddings that grow larger over time",
+    "A technique for combining multiple embedding models"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The name comes from Russian nesting dolls but the technique is language-agnostic.",
+    "Correct. Like nesting dolls, the information is structured so that outer (later) dimensions add detail to inner (earlier) dimensions. A 1536-dim embedding truncated to 256 dims still captures the core semantics — just with less precision. Use full dims for your main vector index; use truncated for: first-pass candidate selection (fast ANN on small vectors), edge devices with memory constraints, or when you need to balance storage cost vs precision.",
+    "Incorrect. The embedding dimension is fixed at generation time. Matryoshka allows graceful truncation, not growth.",
+    "Incorrect. Matryoshka is a property of a single embedding model, not a combination technique."
+  ]
+},
+{
+  id: "ss6", topic: "Security & Safety", pageId: "kp_eu_ai_act",
+  question: "Under the EU AI Act, what must a company do if they deploy a customer-facing chatbot?",
+  options: [
+    "Nothing — chatbots are unregulated",
+    "Clearly disclose to users that they are interacting with an AI system (transparency requirement for 'limited risk')",
+    "Get government approval before launching",
+    "Only serve EU citizens from EU-based servers"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Chatbots fall under 'limited risk' which has transparency requirements, not zero regulation.",
+    "Correct. The EU AI Act requires that users are clearly informed when they're interacting with AI. This applies to chatbots, AI-generated content, and deepfakes. You must make it clear — users shouldn't think they're talking to a human when they're talking to an AI. This is a relatively light requirement (no risk assessment or certification needed), but it is mandatory.",
+    "Incorrect. Limited-risk AI doesn't need pre-approval. High-risk AI needs conformity assessments but not government pre-approval either.",
+    "Incorrect. The EU AI Act applies to AI systems serving EU users regardless of where the servers are located (similar to GDPR's extraterritorial scope)."
+  ]
+},
+{
+  id: "lf34", topic: "LLM Fundamentals", pageId: "kp_hallucination",
+  question: "Why does RLHF training actually make hallucination WORSE in some cases?",
+  options: [
+    "RLHF uses incorrect training data",
+    "RLHF rewards helpfulness and confidence, training models to answer even when they should say 'I don't know'",
+    "RLHF reduces the model's vocabulary",
+    "RLHF makes the model generate faster, skipping fact-checking"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. RLHF training data quality isn't the issue here. It's about what behaviors are being rewarded.",
+    "Correct. RLHF trains models to be helpful — and human raters often prefer confident, complete answers over 'I'm not sure' or 'I don't have enough information.' This sycophancy means the model learns to ALWAYS provide an answer, even when it's uncertain. It would rather confabulate a plausible-sounding response than admit ignorance, because admitting ignorance was rated lower during RLHF training.",
+    "Incorrect. RLHF doesn't modify the vocabulary. It changes the model's output distribution over existing tokens.",
+    "Incorrect. RLHF doesn't affect generation speed. Models don't have a 'fact-checking step' that could be skipped."
+  ]
 }
 ];
