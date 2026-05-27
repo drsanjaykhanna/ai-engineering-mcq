@@ -1682,5 +1682,304 @@ Classify the sentiment:<br>
 
 <div class="analogy"><strong>Medical analogy:</strong> Think of the open model ecosystem like drug compounding. The base model is the active ingredient (developed by pharma/model providers). LoRA is your formulation (adapting it for your specific clinical need). Quantization is the dosage form (making it deliverable on your available hardware). Merging is combination therapy (combining multiple adaptations into one). And the evaluation pipeline is your clinical trial — proving it works and is safe before deployment.</div>
 `
+},
+{
+  title: "AI Regulation: US, EU, and UK Frameworks Compared",
+  description: "The three major regulatory regimes for AI — what each requires, how they differ, and what this means if you're building AI products for global markets.",
+  level: "advanced",
+  readTime: "14 min",
+  linkedTopics: ["Security & Safety", "Health AI"],
+  content: `
+<h2>Why Regulation Matters to Engineers</h2>
+
+<p>AI regulation isn't just a legal team problem. It directly constrains what you can build, how you can deploy it, and what documentation you need. An AI engineer who understands regulatory requirements can design compliant systems from the start — avoiding expensive retrofitting or the nightmare scenario of launching something that gets blocked by regulators.</p>
+
+<p>Three jurisdictions dominate the global AI regulatory landscape: the EU (prescriptive, risk-based, already law), the US (sector-specific, executive-order-driven, evolving), and the UK (principles-based, pro-innovation, lighter touch). If you're building for international markets — or working at a company that operates globally — you need to understand all three.</p>
+
+<h2>The EU AI Act: The World's First Comprehensive AI Law</h2>
+
+<p>The EU AI Act entered into force in August 2024, with full application by August 2026 (phased rollout). It's the most prescriptive AI regulation globally — a 460-page document that creates binding obligations based on risk level.</p>
+
+<h3>The Risk Pyramid</h3>
+
+<p><strong>Unacceptable Risk (BANNED outright):</strong></p>
+<ul>
+<li>Social scoring systems by governments (assigning citizen "trustworthiness" scores that affect rights)</li>
+<li>Real-time remote biometric identification in public spaces for law enforcement (with narrow exceptions for terrorism, missing children)</li>
+<li>AI that exploits vulnerabilities of specific groups (children, disabled people, elderly) to manipulate behavior</li>
+<li>Emotion recognition in workplaces and educational institutions</li>
+<li>Untargeted scraping of facial images from the internet or CCTV to build recognition databases</li>
+</ul>
+
+<p><strong>High Risk (Heavy obligations):</strong></p>
+<p>AI systems used in:</p>
+<ul>
+<li><strong>Employment:</strong> CV screening, interview evaluation, hiring decisions, performance monitoring, promotion/termination decisions</li>
+<li><strong>Education:</strong> Exam scoring, student assessment, admissions decisions</li>
+<li><strong>Credit & insurance:</strong> Credit scoring, loan decisions, insurance risk assessment</li>
+<li><strong>Healthcare:</strong> Diagnostic AI, treatment recommendations, medical device AI (overlaps with MDR)</li>
+<li><strong>Law enforcement:</strong> Predictive policing, evidence evaluation, lie detection</li>
+<li><strong>Critical infrastructure:</strong> AI managing electricity grids, water supply, transport safety systems</li>
+<li><strong>Migration & border:</strong> Visa applications, asylum claims, border surveillance</li>
+</ul>
+
+<p><strong>Requirements for High-Risk AI:</strong></p>
+<ul>
+<li><strong>Risk management system:</strong> Identify, assess, and mitigate risks throughout the lifecycle</li>
+<li><strong>Data governance:</strong> Training data must be relevant, representative, free of errors, and complete. Bias detection and mitigation required.</li>
+<li><strong>Technical documentation:</strong> Detailed description of the system, its purpose, performance, limitations, and the data used to build it</li>
+<li><strong>Record-keeping:</strong> Automatic logging of system operation for traceability</li>
+<li><strong>Transparency:</strong> Users must be informed they're interacting with AI. Clear instructions for human overseers.</li>
+<li><strong>Human oversight:</strong> Designed to allow human intervention. Humans must be able to override, interrupt, or halt the system.</li>
+<li><strong>Accuracy, robustness, cybersecurity:</strong> Appropriate levels of each, tested and documented</li>
+<li><strong>Conformity assessment:</strong> For the highest-risk subcategories (biometrics, critical infrastructure), third-party assessment required before market placement</li>
+</ul>
+
+<p><strong>Limited Risk (Transparency obligations only):</strong></p>
+<ul>
+<li><strong>Chatbots:</strong> Must disclose to users they're interacting with AI</li>
+<li><strong>AI-generated content:</strong> Must be labelled as such (text, images, audio, video)</li>
+<li><strong>Deepfakes:</strong> Must be disclosed as artificially generated/manipulated</li>
+<li><strong>Emotion recognition systems:</strong> Must inform subjects they're being analysed</li>
+</ul>
+
+<p><strong>Minimal Risk (No specific obligations):</strong></p>
+<p>Spam filters, AI in video games, recommendation algorithms, most internal business tools. Free to deploy without AI Act obligations (though GDPR and other laws still apply).</p>
+
+<h3>General-Purpose AI Models (GPAI) — Special Rules</h3>
+
+<p>The EU AI Act also regulates FOUNDATION MODEL PROVIDERS (not just deployers):</p>
+
+<p><strong>All GPAI providers must:</strong></p>
+<ul>
+<li>Create and maintain technical documentation</li>
+<li>Provide information to downstream deployers so they can comply with their obligations</li>
+<li>Establish a copyright compliance policy</li>
+<li>Publish a sufficiently detailed training data summary</li>
+</ul>
+
+<p><strong>GPAI with "systemic risk" (trained with >10²⁵ FLOPs) additionally must:</strong></p>
+<ul>
+<li>Perform model evaluations including adversarial testing</li>
+<li>Assess and mitigate systemic risks</li>
+<li>Report serious incidents to the AI Office</li>
+<li>Ensure adequate cybersecurity protection</li>
+</ul>
+
+<p>This applies to: GPT-4, Claude Opus, Gemini Ultra, Llama-405B — any model above the compute threshold. Smaller models (Mistral-7B, Llama-8B) likely fall below.</p>
+
+<h3>Penalties</h3>
+<ul>
+<li>Banned AI systems: up to €35 million or 7% of global annual turnover (whichever is higher)</li>
+<li>High-risk non-compliance: up to €15 million or 3% of turnover</li>
+<li>Incorrect information to authorities: up to €7.5 million or 1.5% of turnover</li>
+</ul>
+
+<h3>Timeline</h3>
+<ul>
+<li>February 2025: Prohibitions on banned AI practices apply</li>
+<li>August 2025: GPAI rules and governance structures apply</li>
+<li>August 2026: Full application of all provisions including high-risk requirements</li>
+</ul>
+
+<h2>The US: Executive Orders, Sector-Specific Rules, and State Laws</h2>
+
+<p>The US has <strong>no single comprehensive federal AI law</strong> equivalent to the EU AI Act. Instead, AI is regulated through a patchwork of executive orders, sector-specific regulators, and increasingly, state laws.</p>
+
+<h3>The Biden Executive Order on AI (October 2023)</h3>
+<p>Not legislation (can be modified or revoked by subsequent presidents), but set federal policy:</p>
+<ul>
+<li>Developers of "dual-use foundation models" (trained with >10²⁶ FLOPs or comparable) must report to the government, share safety test results</li>
+<li>Directed NIST to develop AI safety standards and red-teaming guidelines</li>
+<li>Directed agencies to address AI risks in their sectors</li>
+<li>Required watermarking guidance for AI-generated content</li>
+</ul>
+
+<p><strong>Note:</strong> The Trump administration (January 2025) partially revoked and modified the Biden EO. The regulatory direction is evolving and politically contested. The sector-specific rules below are more stable.</p>
+
+<h3>Sector-Specific Federal Regulation</h3>
+
+<p><strong>Healthcare (FDA):</strong></p>
+<ul>
+<li>AI/ML-based Software as a Medical Device (SaMD) requires FDA clearance/approval</li>
+<li>900+ AI/ML medical devices cleared as of 2024</li>
+<li>Most are Class II (510(k) pathway — show equivalence to existing device)</li>
+<li>Predetermined Change Control Plan allows pre-approved model updates post-deployment</li>
+<li>FDA does NOT regulate clinical decision support that merely provides information to clinicians (certain exemptions apply)</li>
+</ul>
+
+<p><strong>Financial services (Fed, SEC, CFPB, OCC):</strong></p>
+<ul>
+<li>Fair lending laws apply to AI credit decisions (Equal Credit Opportunity Act, Fair Housing Act)</li>
+<li>Adverse action notice required when AI denies credit — must explain why</li>
+<li>Model risk management guidance (SR 11-7) applies to AI models in banking</li>
+<li>CFPB has signaled scrutiny of AI in consumer finance</li>
+</ul>
+
+<p><strong>Employment (EEOC, FTC):</strong></p>
+<ul>
+<li>Title VII (anti-discrimination) applies to AI hiring tools. If your AI screens candidates and produces disparate impact on protected groups, that's illegal regardless of intent.</li>
+<li>NYC Local Law 144: requires annual bias audits for automated employment decision tools. First city-level AI regulation in the US.</li>
+</ul>
+
+<p><strong>FTC (Federal Trade Commission):</strong></p>
+<ul>
+<li>Section 5 (unfair/deceptive practices) applies to AI claims and AI harms</li>
+<li>Has taken action against companies making false AI claims or using AI in deceptive ways</li>
+<li>Required algorithmic disgorgement (deleting the model) in some enforcement actions</li>
+</ul>
+
+<h3>State Laws (Growing Patchwork)</h3>
+<ul>
+<li><strong>Colorado AI Act (2024):</strong> Requires developers and deployers of "high-risk" AI to assess and mitigate algorithmic discrimination. Effective 2026.</li>
+<li><strong>California (multiple bills):</strong> Several AI transparency and safety bills pending/passed. Historically the strictest tech regulator at state level.</li>
+<li><strong>Illinois Artificial Intelligence Video Interview Act:</strong> Requires consent and transparency for AI analysis of video interviews.</li>
+<li><strong>Texas, Virginia, Connecticut:</strong> Various AI-related provisions within broader data privacy laws.</li>
+</ul>
+
+<p><strong>The US picture:</strong> Unlike the EU's single comprehensive framework, US AI regulation is fragmented — sector-by-sector, state-by-state, agency-by-agency. This creates compliance complexity for companies operating across sectors or states. Many companies default to EU AI Act compliance as their global baseline because it's the most stringent.</p>
+
+<h2>The UK: Pro-Innovation, Principles-Based Approach</h2>
+
+<p>The UK explicitly rejected the EU's prescriptive approach in favour of a <strong>principles-based, sector-led framework</strong> — designed to be lighter-touch, more flexible, and more innovation-friendly. Introduced in the March 2023 White Paper "A Pro-Innovation Approach to AI Regulation."</p>
+
+<h3>Five Core Principles</h3>
+<p>Existing regulators (ICO, FCA, CMA, MHRA, Ofcom, etc.) must apply these principles within their sectors:</p>
+<ol>
+<li><strong>Safety, Security, and Robustness:</strong> AI should function securely and as intended</li>
+<li><strong>Transparency and Explainability:</strong> AI systems and their outputs should be understandable</li>
+<li><strong>Fairness:</strong> AI should not produce discriminatory outcomes</li>
+<li><strong>Accountability and Governance:</strong> Clear lines of responsibility for AI outcomes</li>
+<li><strong>Contestability and Redress:</strong> People should be able to challenge AI decisions that affect them</li>
+</ol>
+
+<h3>Key Differences from the EU</h3>
+<ul>
+<li><strong>No risk classification system:</strong> The UK doesn't categorize AI into risk tiers. Each regulator decides how to apply the principles in their domain.</li>
+<li><strong>Initially non-statutory:</strong> The principles were guidance, not law. However, the new government (2024) introduced the AI (Regulation) Bill — signalling a move toward statutory requirements.</li>
+<li><strong>Sector regulators lead:</strong> The FCA handles AI in finance, MHRA handles AI medical devices, ICO handles AI and data protection. No single "AI regulator" (though the AI Safety Institute provides cross-cutting technical expertise).</li>
+<li><strong>Pro-innovation framing:</strong> Explicit policy goal is for the UK to be a global AI leader. Regulation is framed as enabling trust, not restricting development.</li>
+</ul>
+
+<h3>UK AI Safety Institute (AISI)</h3>
+<p>Established 2023 at Bletchley Park. World's first government body focused on frontier AI safety. Conducts pre-deployment testing of frontier models, publishes safety evaluations, develops safety tooling. Not a regulator — an evaluator and advisor. Works with Anthropic, Google DeepMind, Meta, OpenAI on pre-release safety testing.</p>
+
+<h3>Healthcare AI (MHRA + NICE)</h3>
+<ul>
+<li><strong>MHRA:</strong> AI medical devices regulated under UK MDR 2002 (separate from EU MDR post-Brexit). Similar classification to EU (Class I/IIa/IIb/III). UKCA marking required (though CE marking still accepted during transition).</li>
+<li><strong>NICE Evidence Standards Framework for Digital Health Technologies:</strong> Defines evidence requirements for AI health technologies seeking NHS adoption. Tiered: higher-risk functions need more robust evidence (RCTs for treatment decisions).</li>
+<li><strong>NHS AI Lab (now NHS Transformation Directorate):</strong> Supports adoption of AI in the NHS. Maintains the AI and Digital Regulations Service helping companies navigate the regulatory pathway.</li>
+</ul>
+
+<h3>Data Protection (ICO)</h3>
+<ul>
+<li>UK GDPR (retained from EU law, largely identical provisions)</li>
+<li>AI-specific guidance from ICO on: fairness in AI, explaining AI decisions, AI and data protection impact assessments</li>
+<li>Requirement for DPIA (Data Protection Impact Assessment) when using AI for profiling or automated decision-making</li>
+<li>Article 22: right not to be subject to a decision based solely on automated processing that produces legal or significant effects. Requires human involvement in significant automated decisions.</li>
+</ul>
+
+<h2>Comparison Table</h2>
+
+<table style="width:100%; font-size:13px; border-collapse:collapse;">
+<thead>
+<tr style="border-bottom:2px solid var(--bg3);">
+<th style="text-align:left; padding:8px;">Dimension</th>
+<th style="text-align:left; padding:8px;">EU</th>
+<th style="text-align:left; padding:8px;">US</th>
+<th style="text-align:left; padding:8px;">UK</th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Approach</strong></td>
+<td style="padding:8px;">Prescriptive, risk-based, comprehensive</td>
+<td style="padding:8px;">Sector-specific, fragmented, evolving</td>
+<td style="padding:8px;">Principles-based, sector-led, pro-innovation</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Primary law</strong></td>
+<td style="padding:8px;">EU AI Act (2024)</td>
+<td style="padding:8px;">No single law; EOs + sector rules + state laws</td>
+<td style="padding:8px;">AI (Regulation) Bill (pending); principles framework</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Risk tiers</strong></td>
+<td style="padding:8px;">Yes (4 tiers: banned/high/limited/minimal)</td>
+<td style="padding:8px;">No (sector regulators decide)</td>
+<td style="padding:8px;">No (sector regulators apply principles)</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Foundation model rules</strong></td>
+<td style="padding:8px;">Yes (GPAI provisions, systemic risk tier)</td>
+<td style="padding:8px;">EO reporting (status uncertain); no law</td>
+<td style="padding:8px;">Voluntary commitments via AISI</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Healthcare AI</strong></td>
+<td style="padding:8px;">EU MDR + AI Act (high-risk category)</td>
+<td style="padding:8px;">FDA SaMD (510(k), De Novo, PMA)</td>
+<td style="padding:8px;">MHRA + NICE evidence standards</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Transparency</strong></td>
+<td style="padding:8px;">Mandatory disclosure for chatbots, deepfakes, AI content</td>
+<td style="padding:8px;">No federal requirement (some state laws)</td>
+<td style="padding:8px;">Principle-based; ICO guidance; not yet mandated</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Penalties</strong></td>
+<td style="padding:8px;">Up to €35M or 7% global turnover</td>
+<td style="padding:8px;">Varies by sector (FTC, FDA, EEOC enforcement)</td>
+<td style="padding:8px;">Regulator-specific (ICO up to £17.5M / 4% turnover)</td>
+</tr>
+<tr style="border-bottom:1px solid var(--bg3);">
+<td style="padding:8px;"><strong>Extraterritorial</strong></td>
+<td style="padding:8px;">Yes — applies to any AI affecting EU residents</td>
+<td style="padding:8px;">Sector-dependent</td>
+<td style="padding:8px;">Yes for UK GDPR; pending for AI Bill</td>
+</tr>
+<tr>
+<td style="padding:8px;"><strong>Status (mid-2026)</strong></td>
+<td style="padding:8px;">Fully in force</td>
+<td style="padding:8px;">Evolving, politically contested</td>
+<td style="padding:8px;">Principles active; Bill progressing through Parliament</td>
+</tr>
+</tbody>
+</table>
+
+<h2>What This Means for AI Engineers</h2>
+
+<h3>If you're building for EU users:</h3>
+<ul>
+<li>Classify your system's risk level immediately. High-risk = significant documentation and compliance burden.</li>
+<li>Always disclose AI interaction to users (limited risk minimum).</li>
+<li>Prepare technical documentation: data governance, risk assessment, performance metrics, bias testing.</li>
+<li>Ensure human oversight mechanisms exist for high-risk systems.</li>
+<li>If using a foundation model: check if your provider has published their GPAI compliance documentation.</li>
+</ul>
+
+<h3>If you're building for US users:</h3>
+<ul>
+<li>Identify which sector regulators apply to you (FDA? FTC? EEOC? State laws?).</li>
+<li>For healthcare: FDA SaMD pathway. For hiring: bias audit obligations (certainly in NYC, likely expanding).</li>
+<li>For consumer-facing: FTC's unfair/deceptive practices standard applies. Don't make false AI claims.</li>
+<li>Monitor state laws — they're proliferating quickly.</li>
+</ul>
+
+<h3>If you're building for UK users:</h3>
+<ul>
+<li>Apply the five principles: safety, transparency, fairness, accountability, contestability.</li>
+<li>Identify your sector regulator and follow their AI guidance.</li>
+<li>For healthcare: MHRA device classification + NICE evidence standards for NHS adoption.</li>
+<li>UK GDPR applies: DPIA for high-risk processing, Article 22 for automated decisions.</li>
+<li>Watch the AI Bill progress — statutory obligations likely coming.</li>
+</ul>
+
+<h3>If you're building for all three:</h3>
+<p>Default to EU AI Act compliance as your baseline — it's the most stringent. A system that meets EU requirements will generally satisfy US and UK requirements too (with sector-specific additions). This is the "Brussels Effect" — the EU's regulatory gravity pulling global standards upward, just as GDPR did for data protection.</p>
+
+<div class="analogy"><strong>Medical analogy:</strong> This is like drug regulation. The FDA (US), EMA (EU), and MHRA (UK) all have different requirements, but if you design your trials to the most stringent standard, you can often submit to all three. Same principle: build to the EU AI Act standard and you've mostly covered the others. The sector-specific requirements (FDA for health, FCA for finance) are additions on top, not alternatives.</div>
+`
 }
 ];
