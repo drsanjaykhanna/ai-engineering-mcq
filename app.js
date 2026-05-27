@@ -57,6 +57,7 @@ const app = {
     document.getElementById('screen-' + name).classList.add('active');
     this.currentScreen = name;
     if (name === 'topics') this.renderTopics();
+    if (name === 'modules') this.renderModules();
     if (name === 'learn') this.renderLearnList();
     if (name === 'stats') this.renderStats();
     if (name === 'home') this.updateHomeStats();
@@ -389,6 +390,49 @@ const app = {
   endQuiz() {
     if (this.sessionTotal > 0 && !confirm('End this session?')) return;
     this.showScreen('home');
+  },
+
+  renderModules() {
+    const list = document.getElementById('module-list');
+    list.innerHTML = '';
+    LEARNING_MODULES.forEach((mod, i) => {
+      const card = document.createElement('div');
+      card.className = 'module-card';
+      card.onclick = () => this.openModule(i);
+      const levelClass = mod.level === 'beginner' ? 'module-badge-beginner' : mod.level === 'advanced' ? 'module-badge-advanced' : 'module-badge-intermediate';
+      card.innerHTML = `
+        <div class="module-card-title">${mod.title}</div>
+        <div class="module-card-desc">${mod.description}</div>
+        <div class="module-card-meta">
+          <span class="module-badge ${levelClass}">${mod.level}</span>
+          <span>${mod.readTime} read</span>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  },
+
+  currentModuleIdx: null,
+
+  openModule(idx) {
+    const mod = LEARNING_MODULES[idx];
+    if (!mod) return;
+    this.currentModuleIdx = idx;
+    document.getElementById('module-read-title').textContent = mod.title;
+    document.getElementById('module-read-body').innerHTML = mod.content;
+    const linkedTopics = mod.linkedTopics || [];
+    const linkedQs = QUESTIONS.filter(q => linkedTopics.includes(q.topic));
+    document.getElementById('module-quiz-btn').style.display = linkedQs.length > 0 ? 'block' : 'none';
+    this.showScreen('module-read');
+  },
+
+  startModuleQuiz() {
+    if (this.currentModuleIdx === null) return;
+    const mod = LEARNING_MODULES[this.currentModuleIdx];
+    const linkedTopics = mod.linkedTopics || [];
+    const qs = QUESTIONS.filter(q => linkedTopics.includes(q.topic));
+    if (qs.length === 0) return;
+    this.startQuiz(this.shuffle(qs).slice(0, 20));
   },
 
   renderLearnList() {

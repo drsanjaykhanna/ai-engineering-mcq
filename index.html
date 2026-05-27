@@ -43,7 +43,8 @@
         <button class="btn btn-secondary btn-lg" onclick="app.showScreen('topics')">Browse Topics</button>
         <button class="btn btn-secondary btn-lg" onclick="app.startWeakest()">Weakest Areas</button>
         <button class="btn btn-secondary btn-lg" onclick="app.startFlagged()">Flagged Questions</button>
-        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('learn')">Read Knowledge Pages</button>
+        <button class="btn btn-accent btn-lg" onclick="app.showScreen('modules')">Learning Corner</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('learn')">Knowledge Pages</button>
       </div>
       <div class="home-footer">
         <button class="btn-text" onclick="app.showScreen('stats')">View Stats</button>
@@ -80,6 +81,30 @@
       </div>
       <div class="quiz-footer">
         <button class="btn btn-primary btn-lg hidden" id="next-btn" onclick="app.nextQuestion()">Next Question</button>
+      </div>
+    </div>
+
+    <!-- Modules Screen (Learning Corner) -->
+    <div id="screen-modules" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Learning Corner</h2>
+        <div class="spacer"></div>
+      </div>
+      <p class="module-intro">Long-form reads that build understanding. Read a module, then test yourself with linked questions.</p>
+      <div id="module-list" class="topic-list"></div>
+    </div>
+
+    <!-- Module Read Screen -->
+    <div id="screen-module-read" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('modules')">&larr;</button>
+        <h2 id="module-read-title">Module</h2>
+        <div class="spacer"></div>
+      </div>
+      <div class="module-body" id="module-read-body"></div>
+      <div class="read-footer">
+        <button class="btn btn-primary btn-lg" id="module-quiz-btn" onclick="app.startModuleQuiz()">Test Yourself</button>
       </div>
     </div>
 
@@ -134,6 +159,7 @@
     </div>
   </div>
 
+  <script src="modules.js"></script>
   <script src="knowledge.js"></script>
   <script src="questions.js"></script>
   <script src="app.js"></script>
