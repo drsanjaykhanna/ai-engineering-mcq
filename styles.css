@@ -418,6 +418,29 @@ html, body {
 .results-label { font-size: 14px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 .results-breakdown { text-align: left; margin-bottom: 32px; }
 
+/* Learn/Read */
+.learn-topic-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 0 6px;
+}
+.read-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+.read-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px calc(var(--safe-bottom) + 12px);
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+
 /* Animations */
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(12px); }

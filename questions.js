@@ -1603,5 +1603,210 @@ const QUESTIONS = [
     "Incorrect. That's adversarial training or red-teaming (which is one layer of defense), not the broader principle of defense in depth.",
     "Incorrect. Network architecture security helps but isn't what 'defense in depth' means in the LLM context. It's about layering AI-specific controls."
   ]
+},
+// === ADDITIONAL QUESTIONS LINKED TO NEW KNOWLEDGE PAGES ===
+{
+  id: "rag9", topic: "RAG Systems", pageId: "kp_vector_search",
+  question: "Why is HNSW generally preferred over IVF-based indexes for RAG applications?",
+  options: [
+    "HNSW uses less memory",
+    "HNSW provides higher recall (finds more truly relevant results) at the same query speed",
+    "HNSW is faster to build",
+    "HNSW supports more vector dimensions"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. HNSW actually uses MORE memory than IVF because it stores the graph structure (edges between nodes) in addition to the vectors.",
+    "Correct. HNSW achieves higher recall than IVF at equivalent query latencies. Its graph-based navigation naturally finds relevant results that IVF might miss (because IVF only searches selected clusters, missing results in neighboring clusters). For RAG, recall matters more than anything — a missed relevant document means a wrong answer.",
+    "Incorrect. HNSW has longer build times than IVF (constructing the multi-layer graph is expensive). IVF clustering is faster to build.",
+    "Incorrect. Both support arbitrary dimensions. The choice between them is about quality/speed/memory tradeoffs, not dimension limits."
+  ]
+},
+{
+  id: "rag10", topic: "RAG Systems", pageId: "kp_vector_search",
+  question: "A startup is building their first RAG app with ~50k documents in Postgres. Which vector search approach makes most sense?",
+  options: [
+    "Deploy a dedicated Pinecone cluster",
+    "Use pgvector — add vector search directly to their existing Postgres database",
+    "Set up a separate FAISS server",
+    "Build a custom vector search engine from scratch"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Pinecone is excellent but adds cost, vendor lock-in, and operational complexity for only 50k documents. Overkill for this scale.",
+    "Correct. pgvector adds vector search as a Postgres extension — no new infrastructure, no new operational burden, data stays with the rest of your app's data. At 50k documents, even flat search is fast enough, and HNSW index handles much larger scales. Pragmatic, simple, and sufficient for a startup's needs.",
+    "Incorrect. A separate FAISS server adds infrastructure to manage. For 50k docs where the data is already in Postgres, pgvector is simpler and sufficient.",
+    "Incorrect. Never build custom infrastructure when proven solutions exist. This would be months of work for something pgvector gives you with one SQL command."
+  ]
+},
+{
+  id: "rag11", topic: "RAG Systems", pageId: "kp_graph_rag",
+  question: "When does Graph RAG provide a clear advantage over standard vector-based RAG?",
+  options: [
+    "When documents are very long",
+    "When queries require understanding relationships between entities across multiple documents",
+    "When you need fast query speeds",
+    "When the document collection is small"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Document length is handled by chunking strategies, not Graph RAG. Long documents are a chunking problem, not a graph problem.",
+    "Correct. Graph RAG excels when the answer requires connecting dots: 'How is company A related to company B through their supply chain?' requires traversing relationships that span multiple documents. Vector search retrieves relevant chunks independently but can't reason about how entities connect. The knowledge graph captures these relationships explicitly.",
+    "Incorrect. Graph RAG actually adds latency (graph traversal + vector search). It's used for answer quality, not speed.",
+    "Incorrect. Collection size doesn't determine whether Graph RAG is needed. It's about the TYPE of query (relational vs factual), not data volume."
+  ]
+},
+{
+  id: "rag12", topic: "RAG Systems", pageId: "kp_rag_eval",
+  question: "Your RAG system has high faithfulness but low answer relevance. What does this diagnose?",
+  options: [
+    "The LLM is hallucinating",
+    "The retrieval is finding wrong documents",
+    "The LLM faithfully quotes the retrieved context but doesn't actually answer the user's question",
+    "The system is working correctly"
+  ],
+  correct: 2,
+  explanation: [
+    "Incorrect. High faithfulness means the model IS using the context faithfully (not hallucinating). The problem is elsewhere.",
+    "Incorrect. If retrieval were finding wrong documents AND the model was faithful to them, that would cause both low faithfulness (wrong info) and low relevance. But faithfulness is HIGH here.",
+    "Correct. High faithfulness + low relevance means: the model accurately reports what's in the context, but that information doesn't address the question. Likely cause: retrieved chunks are topically related but don't contain the specific answer. Fix: improve retrieval precision, add query rewriting, or adjust the prompt to instruct the model to say 'I don't have enough information' rather than rambling about tangential context.",
+    "Incorrect. Low answer relevance means users aren't getting their questions answered. That's a problem to fix."
+  ]
+},
+{
+  id: "ag7", topic: "AI Agents & Tool Use", pageId: "kp_multiagent",
+  question: "What is the 'supervisor/worker' pattern in multi-agent systems?",
+  options: [
+    "One human supervises all AI agents",
+    "A manager agent delegates tasks to specialized worker agents and synthesizes their outputs",
+    "Workers monitor the supervisor for errors",
+    "All agents have equal authority and vote on actions"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The supervisor is itself an AI agent, not a human. Human-in-the-loop is a separate pattern.",
+    "Correct. The supervisor agent receives the high-level task, breaks it down, assigns subtasks to specialized workers (researcher, coder, writer), collects their outputs, and produces the final result. This mirrors human team structures. The supervisor usually uses a more capable model while workers can use cheaper models for their narrower tasks.",
+    "Incorrect. In this pattern, workers report TO the supervisor, not the other way around. Error monitoring can be added but isn't the core pattern.",
+    "Incorrect. That's more like a 'debate' or 'consensus' pattern. Supervisor/worker has clear hierarchy — the supervisor decides what workers do."
+  ]
+},
+{
+  id: "ag8", topic: "AI Agents & Tool Use", pageId: "kp_langchain_langgraph",
+  question: "Why would you choose LangGraph over basic LangChain for an application?",
+  options: [
+    "LangGraph is faster",
+    "When you need cycles (loops), conditional branching, persistent state, or human-in-the-loop approval",
+    "LangGraph supports more LLM providers",
+    "LangChain is deprecated"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. LangGraph adds overhead from state management. It's not about speed — it's about handling complex control flow.",
+    "Correct. LangChain chains are linear: A→B→C. LangGraph enables: loops (agent retries until success), conditional routing (if X do Y else Z), persistent state (pause/resume across sessions), and human-in-the-loop (pause at a node for user approval). These are essential for agent-like behavior that can't be expressed as a simple chain.",
+    "Incorrect. Both use the same provider integrations. LangGraph builds on LangChain's ecosystem.",
+    "Incorrect. LangChain is actively maintained. LangGraph is an addition for complex workflows, not a replacement."
+  ]
+},
+{
+  id: "io8", topic: "Inference & Quantization", pageId: "kp_speculative_decoding",
+  question: "In speculative decoding, what happens when the large model disagrees with the draft model at token position 5 (of 8 drafted tokens)?",
+  options: [
+    "The entire sequence is regenerated from scratch",
+    "Tokens 1-4 are accepted, the large model's token 5 is used, and tokens 6-8 are discarded",
+    "The draft model is retrained on-the-fly",
+    "Token 5 is averaged between both models' predictions"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. That would waste the accepted tokens 1-4. Speculative decoding is designed to preserve correct work.",
+    "Correct. The verification is sequential: check token 1 (agree? keep), token 2 (agree? keep), ... token 5 (disagree? use large model's token, discard everything after). Tokens 1-4 were 'free' — accepted without additional large model computation. Only position 5 onwards needs new draft+verify cycles. This is how the speedup works: you keep all correct speculations.",
+    "Incorrect. No training happens during inference. The draft model is fixed — it just proposes tokens for the large model to verify.",
+    "Incorrect. There's no averaging. The output must match the large model's distribution exactly. Either the draft is accepted or the large model's token is used."
+  ]
+},
+{
+  id: "io9", topic: "Inference & Quantization", pageId: "kp_speculative_decoding",
+  question: "What is the key constraint on choosing a draft model for speculative decoding?",
+  options: [
+    "It must be the same architecture as the target model",
+    "It must be fast enough that drafting K tokens + verification is cheaper than the large model generating K tokens normally",
+    "It must have the same vocabulary as the target model",
+    "It must achieve the same quality as the target model"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The draft model can be any architecture. Some systems even use n-gram models or simple lookup tables as drafts.",
+    "Correct. The speedup only works if: (time to draft K tokens) + (time to verify K tokens in one pass) < (time for large model to generate K tokens sequentially). If the draft model is too slow or the acceptance rate is too low (requiring frequent re-drafting), you don't gain speed. Ideal: very fast draft model with high acceptance rate.",
+    "Incorrect. While matching vocabularies is practical for implementation, it's not the fundamental constraint. The key is the speed/acceptance tradeoff.",
+    "Incorrect. If the draft model had the same quality, you'd just use it directly! The whole point is that the draft model is smaller/faster/worse, and the large model catches its mistakes."
+  ]
+},
+{
+  id: "dp4", topic: "Deployment & MLOps", pageId: "kp_guardrails",
+  question: "A production LLM app occasionally outputs personal phone numbers from its training data. Which guardrail addresses this?",
+  options: [
+    "Rate limiting",
+    "Output PII filtering — detect and mask personal information in model responses before they reach users",
+    "Input topic filtering",
+    "Increasing the model temperature"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Rate limiting prevents abuse (too many requests) but doesn't inspect content for PII.",
+    "Correct. An output guardrail that scans for PII patterns (phone numbers, emails, SSNs, etc.) and masks/removes them before the response reaches the user. This is a defense against training data memorization — even if the model generates PII, the guardrail catches it. Use regex patterns for structured PII and NER models for names/addresses.",
+    "Incorrect. Input filtering checks what goes IN to the model. The PII is coming OUT — it's in the model's responses, not the user's queries.",
+    "Incorrect. Higher temperature might make PII output less likely (more random) but doesn't prevent it. You need a deterministic filter, not probabilistic avoidance."
+  ]
+},
+{
+  id: "dp5", topic: "Deployment & MLOps", pageId: "kp_guardrails",
+  question: "What is the main tradeoff when adding multiple guardrails to an LLM application?",
+  options: [
+    "Guardrails make the model less intelligent",
+    "Each guardrail adds latency — more safety checks mean slower responses",
+    "Guardrails increase hallucination rates",
+    "Guardrails prevent the model from learning"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Guardrails don't modify the model. They filter inputs/outputs around it. Model intelligence is unchanged.",
+    "Correct. Every guardrail (PII check, content moderation, format validation) adds processing time. A response that takes 500ms from the LLM might take 800ms after input + output guardrails. Strategy: use fast checks (regex, small classifiers) synchronously and expensive checks (LLM-based moderation) asynchronously or only for flagged content.",
+    "Incorrect. Guardrails filter outputs after generation. They don't increase hallucination — they can catch it.",
+    "Incorrect. Guardrails are inference-time systems. They don't affect model training or learning at all."
+  ]
+},
+{
+  id: "ev5", topic: "Evaluation & Benchmarking", pageId: "kp_rag_eval",
+  question: "In the Ragas evaluation framework, what does 'faithfulness' measure?",
+  options: [
+    "How faithful the model is to its training data",
+    "Whether the generated answer can be inferred from the retrieved context (not hallucinated)",
+    "How similar the answer is to a reference answer",
+    "Whether the retrieved documents are from trusted sources"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Faithfulness in RAG evaluation is about fidelity to the RETRIEVED context, not training data.",
+    "Correct. Faithfulness measures: can every claim in the generated answer be supported by the retrieved context? If the model says something not present in the context, that's hallucination and faithfulness drops. This is the key metric for detecting when your RAG system is making things up rather than answering from retrieved documents.",
+    "Incorrect. That's more like an 'answer correctness' metric. Faithfulness specifically measures grounding in the retrieved context.",
+    "Incorrect. Source trustworthiness is a data quality concern. Faithfulness measures whether the LLM sticks to what the context says, regardless of source quality."
+  ]
+},
+{
+  id: "mm4", topic: "Multimodal AI", pageId: "kp_clip",
+  question: "Why is CLIP described as enabling 'zero-shot transfer' for vision tasks?",
+  options: [
+    "It can process images without being trained on any images",
+    "It can classify images into categories never seen during training by matching to text descriptions of those categories",
+    "It doesn't require any training data",
+    "It transfers weights from a language model to a vision model"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. CLIP was trained on 400M image-text pairs. It has seen images. 'Zero-shot' means zero task-specific examples, not zero training.",
+    "Correct. Traditional image classifiers need examples of each class during training. CLIP doesn't — you describe new classes in text ('a photo of a Bernese Mountain Dog') and CLIP can classify images into that category because it understands the text description and can match it to visual content. No category-specific training required — just language.",
+    "Incorrect. CLIP requires massive pre-training. 'Zero-shot' means no additional training for new tasks, not no pre-training.",
+    "Incorrect. CLIP trains vision and text encoders separately (with contrastive loss connecting them). It doesn't transfer one model's weights to another."
+  ]
 }
 ];

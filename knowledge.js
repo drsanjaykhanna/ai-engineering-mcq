@@ -590,5 +590,138 @@ const KNOWLEDGE_PAGES = [
     "Limit agent/tool permissions (least privilege). A prompt injection + powerful tools = full compromise.",
     "Defense in depth: assume any single defense fails. Layer input validation + output filtering + permission limits."
   ]
+},
+// === ADDITIONAL KNOWLEDGE PAGES ===
+{
+  id: "kp_vector_search",
+  title: "Vector Databases: FAISS, Pinecone, and How Similarity Search Works",
+  content: `<p>A <strong>vector database</strong> stores embedding vectors and enables fast similarity search — finding the vectors closest to a query vector. This is the backbone of RAG retrieval, recommendation systems, and semantic search.</p>
+<p><strong>Why not just brute-force search?</strong> With millions of vectors at 1536 dimensions each, computing cosine similarity against every vector takes too long. Vector databases use indexing structures for approximate nearest neighbor (ANN) search — finding the ~top-k similar vectors without checking all of them.</p>
+<p><strong>Key index types:</strong></p>
+<p>• <strong>Flat (brute-force):</strong> Exact search, O(n). Perfect for <100k vectors. No approximation error.</p>
+<p>• <strong>IVF (Inverted File):</strong> Clusters vectors into groups. At query time, only searches the nearest clusters. Fast but can miss results in neighboring clusters. Tune nprobe (how many clusters to check).</p>
+<p>• <strong>HNSW (Hierarchical Navigable Small World):</strong> Builds a multi-layer graph. Fast search, high recall, but high memory usage. Best general-purpose choice for quality.</p>
+<p>• <strong>PQ (Product Quantization):</strong> Compresses vectors for memory efficiency at the cost of accuracy. Good for very large datasets where memory is constrained.</p>
+<p><strong>Managed vs self-hosted:</strong> Pinecone, Weaviate Cloud = managed (serverless scaling, zero ops). FAISS, Chroma, pgvector = self-hosted (full control, no vendor lock-in). For most startups, pgvector (Postgres extension) is the pragmatic choice — your data is already in Postgres.</p>`,
+  keyPoints: [
+    "HNSW = best general-purpose index (fast, high recall). IVF = good when memory is limited. Flat = exact but slow.",
+    "Pinecone/Weaviate = managed (easy, scales). FAISS/pgvector = self-hosted (control, no vendor lock-in).",
+    "pgvector: pragmatic choice for most apps — vector search as a Postgres extension, no separate infrastructure",
+    "All ANN indexes trade accuracy for speed. Tune parameters (nprobe, ef_search) to find your quality/latency balance."
+  ]
+},
+{
+  id: "kp_graph_rag",
+  title: "Graph RAG: When Vector Search Isn't Enough",
+  content: `<p><strong>Graph RAG</strong> combines knowledge graphs with retrieval-augmented generation to handle queries that require understanding relationships between entities — something flat vector search struggles with.</p>
+<p><strong>The problem with basic RAG:</strong> "How are company A's products related to company B's supply chain?" requires connecting multiple facts across multiple documents. Vector search retrieves relevant chunks independently but doesn't understand how they connect. You might get chunk about A's products and chunk about B's suppliers but miss the connection.</p>
+<p><strong>How Graph RAG works:</strong> (1) Extract entities and relationships from documents into a knowledge graph (nodes = entities, edges = relationships). (2) When a query comes in, identify relevant entities. (3) Traverse the graph to find connected information. (4) Use both graph-retrieved relationships AND vector-retrieved chunks to generate the answer.</p>
+<p><strong>When to use Graph RAG vs basic RAG:</strong></p>
+<p>• Use Graph RAG when: questions involve relationships between entities, multi-hop reasoning, or summarizing connections across many documents</p>
+<p>• Use basic RAG when: questions are about specific facts in specific documents, and don't require cross-document reasoning</p>
+<p><strong>Microsoft's GraphRAG:</strong> Uses LLMs to build community summaries of the knowledge graph at different abstraction levels, enabling both specific and high-level summarization queries.</p>`,
+  keyPoints: [
+    "Graph RAG = knowledge graph + vector search. Handles relationship queries that flat retrieval can't.",
+    "Entities and relationships extracted from docs → graph structure → traverse at query time for connected facts",
+    "Use when: multi-hop reasoning, entity relationships, cross-document connections. Skip when: simple fact lookup.",
+    "Microsoft GraphRAG builds hierarchical community summaries for both specific and global queries"
+  ]
+},
+{
+  id: "kp_multiagent",
+  title: "Multi-Agent Systems: Teams of Specialized LLMs",
+  content: `<p><strong>Multi-agent systems</strong> use multiple LLM agents that collaborate, each with a specialized role. Instead of one general agent doing everything, you have a team: a researcher, a writer, a reviewer, a coder — each optimized for their function.</p>
+<p><strong>Why multi-agent over single agent?</strong></p>
+<p>• <strong>Specialization:</strong> Each agent can have a focused system prompt, specific tools, and even different models (cheap model for simple tasks, expensive model for complex ones)</p>
+<p>• <strong>Separation of concerns:</strong> A coding agent shouldn't have email access; a research agent doesn't need code execution. Limits blast radius of failures.</p>
+<p>• <strong>Parallelism:</strong> Multiple agents can work simultaneously on independent subtasks</p>
+<p><strong>Common patterns:</strong></p>
+<p>• <strong>Supervisor/worker:</strong> One agent delegates tasks to specialized workers (CrewAI style)</p>
+<p>• <strong>Debate/adversarial:</strong> Agents argue opposing sides, improving reasoning quality</p>
+<p>• <strong>Pipeline:</strong> Output of one agent feeds into the next (researcher → writer → editor)</p>
+<p>• <strong>Swarm:</strong> Agents hand off to each other based on the task type (OpenAI Swarm pattern)</p>
+<p><strong>Frameworks:</strong> CrewAI (role-based teams), AutoGen (conversation-driven), LangGraph (graph-based orchestration), OpenAI Swarm (lightweight handoffs).</p>`,
+  keyPoints: [
+    "Multi-agent = specialized team vs one generalist. Each agent has focused role, tools, and possibly different model.",
+    "Patterns: supervisor/worker, debate, pipeline, swarm (handoff-based)",
+    "Key benefit: separation of concerns limits blast radius. Coding agent shouldn't have email access.",
+    "Frameworks: CrewAI (roles), AutoGen (conversations), LangGraph (graphs), Swarm (handoffs)"
+  ]
+},
+{
+  id: "kp_rag_eval",
+  title: "RAG Evaluation: Measuring Retrieval and Generation Quality",
+  content: `<p>Evaluating RAG systems requires measuring BOTH retrieval quality (did you get the right documents?) AND generation quality (did the LLM use them correctly?). The <strong>Ragas framework</strong> defines the key metrics:</p>
+<p><strong>Retrieval metrics:</strong></p>
+<p>• <strong>Context Precision:</strong> Of the retrieved chunks, what fraction is actually relevant? Low precision = too much noise in retrieved context.</p>
+<p>• <strong>Context Recall:</strong> Of all relevant information that exists, what fraction did you retrieve? Low recall = missing important information.</p>
+<p><strong>Generation metrics:</strong></p>
+<p>• <strong>Faithfulness:</strong> Is the generated answer supported by the retrieved context? Can the answer be inferred from what was retrieved? Low faithfulness = hallucination (model making things up beyond what the context says).</p>
+<p>• <strong>Answer Relevance:</strong> Does the generated answer actually address the question? An answer can be faithful to context but irrelevant to the question.</p>
+<p><strong>The diagnostic framework:</strong> If answers are bad, where's the failure? (1) Retrieval precision low → improve chunking, embedding model, or add re-ranking. (2) Retrieval recall low → add more documents, try query expansion. (3) Faithfulness low → improve prompt (e.g., "only answer from context"), try a more capable model. (4) Relevance low → improve prompt engineering, make instructions clearer.</p>`,
+  keyPoints: [
+    "Four metrics: Context Precision (relevant retrieved?), Context Recall (all relevant found?), Faithfulness (answer from context?), Answer Relevance (answers the question?)",
+    "Faithfulness = anti-hallucination metric. If faithfulness is low, the model is making things up beyond the context.",
+    "Diagnose failures: bad precision → better chunking/re-ranking. Bad recall → more docs/query expansion. Bad faithfulness → better prompt/model.",
+    "Ragas framework: automated RAG evaluation using LLM-as-Judge for these metrics"
+  ]
+},
+{
+  id: "kp_speculative_decoding",
+  title: "Speculative Decoding: Speed Up Generation Without Quality Loss",
+  content: `<p><strong>Speculative decoding</strong> uses a small, fast "draft" model to generate candidate tokens, then a large model verifies them in parallel. It speeds up the large model's generation by 2-3× with NO quality loss.</p>
+<p><strong>Why generation is slow:</strong> LLM generation is sequential — each token requires a full forward pass through the model. A 70B model might generate 30 tokens/second. The GPU is underutilized because most of the time is spent on memory transfers (loading weights) for a single token.</p>
+<p><strong>The trick:</strong> (1) A small draft model (1-7B) generates K candidate tokens very quickly. (2) The large model processes ALL K tokens in a single forward pass (verification is parallel, unlike generation). (3) If the large model agrees with the draft tokens, they're accepted for free. (4) If it disagrees at position i, tokens i+1...K are rejected, and the large model's token at position i is used instead.</p>
+<p><strong>Why it works:</strong> For many "easy" tokens (function words, common continuations), the small and large model agree. Only "hard" tokens (where the large model's knowledge matters) cost a full large-model step. Since most tokens in natural text are predictable, acceptance rates of 70-85% are common.</p>
+<p><strong>The guarantee:</strong> The output distribution is IDENTICAL to the large model alone. Quality doesn't degrade. You just get it faster by amortizing the verification of multiple tokens into single forward passes.</p>`,
+  keyPoints: [
+    "Small draft model proposes tokens → large model verifies in parallel → 2-3× speedup, zero quality loss",
+    "Works because most tokens are 'easy' (high acceptance rate ~70-85%). Only hard tokens need the big model.",
+    "Output is mathematically identical to large model alone — no approximation, no quality tradeoff",
+    "Key insight: generation is sequential but verification is parallel. Turn sequential generation into parallel verification."
+  ]
+},
+{
+  id: "kp_langchain_langgraph",
+  title: "LangChain vs LangGraph: Chains vs Graphs for LLM Applications",
+  content: `<p><strong>LangChain</strong> is the most popular framework for building LLM applications. <strong>LangGraph</strong> (by the same team) adds stateful, graph-based orchestration for complex agent workflows.</p>
+<p><strong>LangChain (chains):</strong> Linear sequences of steps: retrieve → prompt → generate → parse. Good for straightforward pipelines. Provides abstractions for common patterns: document loaders, text splitters, vector stores, output parsers. Criticism: over-abstraction makes debugging hard; simple tasks become complex.</p>
+<p><strong>LangGraph (graphs):</strong> Models your application as a state machine / directed graph. Nodes are processing steps (LLM calls, tool calls, decisions). Edges connect them with conditional routing. State persists across steps and can branch/loop. Key features: (1) Cycles (agent loops), (2) Persistence (save/resume), (3) Human-in-the-loop (pause for approval), (4) Streaming.</p>
+<p><strong>When to use which:</strong></p>
+<p>• Simple RAG pipeline → LangChain (or just raw code, honestly)</p>
+<p>• Agent with tool use → LangGraph (needs loops and conditional routing)</p>
+<p>• Multi-agent with handoffs → LangGraph (state management across agents)</p>
+<p>• One-shot API call → Neither (just call the API directly)</p>
+<p><strong>The ecosystem controversy:</strong> Some engineers prefer calling APIs directly (more control, less abstraction). LangChain's value is ecosystem (lots of integrations) but at the cost of complexity. For production, many teams start with LangChain for prototyping then migrate to lighter approaches.</p>`,
+  keyPoints: [
+    "LangChain = linear chains for simple pipelines. LangGraph = stateful graphs for agents with loops and branching.",
+    "LangGraph key features: cycles (agent loops), persistence (pause/resume), human-in-the-loop, streaming",
+    "Use LangGraph when: agents with tools, multi-step with conditionals, multi-agent handoffs",
+    "Controversy: many engineers prefer raw API calls for production (less abstraction = easier debugging)"
+  ]
+},
+{
+  id: "kp_guardrails",
+  title: "Guardrails: Controlling LLM Output in Production",
+  content: `<p><strong>Guardrails</strong> are systems that constrain, validate, and filter LLM inputs and outputs to ensure safety, quality, and compliance in production applications.</p>
+<p><strong>Input guardrails (before the LLM):</strong></p>
+<p>• Topic filtering — reject queries outside your application's scope</p>
+<p>• PII detection — identify and mask sensitive data before it enters the prompt</p>
+<p>• Prompt injection detection — flag suspicious inputs that look like injection attempts</p>
+<p>• Rate limiting — prevent abuse and control costs</p>
+<p><strong>Output guardrails (after the LLM):</strong></p>
+<p>• Content moderation — block harmful, toxic, or inappropriate content</p>
+<p>• Factuality checking — verify claims against known sources</p>
+<p>• Format validation — ensure output matches expected structure (valid JSON, etc.)</p>
+<p>• PII filtering — remove any sensitive data the model might have generated</p>
+<p>• Hallucination detection — flag unsupported claims</p>
+<p><strong>Implementation approaches:</strong> Dedicated frameworks (Guardrails AI, NeMo Guardrails from NVIDIA), custom classifiers, regex patterns for structured output, LLM-as-Judge for content review. Often combined: fast regex check + slower LLM review for edge cases.</p>
+<p><strong>The latency tradeoff:</strong> Every guardrail adds latency. Use fast checks (regex, small classifiers) synchronously, and expensive checks (LLM-as-Judge) asynchronously or only for flagged content.</p>`,
+  keyPoints: [
+    "Input guardrails: topic filter, PII detection, injection detection, rate limits (BEFORE the LLM)",
+    "Output guardrails: content moderation, factuality check, format validation, PII filter (AFTER the LLM)",
+    "Frameworks: Guardrails AI, NeMo Guardrails. Often combined: fast regex + slow LLM review for edge cases.",
+    "Latency tradeoff: synchronous fast checks for all traffic, async LLM checks only for flagged content"
+  ]
 }
 ];

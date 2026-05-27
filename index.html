@@ -43,6 +43,7 @@
         <button class="btn btn-secondary btn-lg" onclick="app.showScreen('topics')">Browse Topics</button>
         <button class="btn btn-secondary btn-lg" onclick="app.startWeakest()">Weakest Areas</button>
         <button class="btn btn-secondary btn-lg" onclick="app.startFlagged()">Flagged Questions</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('learn')">Read Knowledge Pages</button>
       </div>
       <div class="home-footer">
         <button class="btn-text" onclick="app.showScreen('stats')">View Stats</button>
@@ -79,6 +80,29 @@
       </div>
       <div class="quiz-footer">
         <button class="btn btn-primary btn-lg hidden" id="next-btn" onclick="app.nextQuestion()">Next Question</button>
+      </div>
+    </div>
+
+    <!-- Learn Screen (Knowledge Pages) -->
+    <div id="screen-learn" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Knowledge Pages</h2>
+        <div class="spacer"></div>
+      </div>
+      <div id="learn-list" class="topic-list"></div>
+    </div>
+
+    <!-- Read Screen (Single Knowledge Page) -->
+    <div id="screen-read" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('learn')">&larr;</button>
+        <h2 id="read-title">Page</h2>
+        <div class="spacer"></div>
+      </div>
+      <div class="read-body" id="read-body"></div>
+      <div class="read-footer">
+        <button class="btn btn-primary btn-lg" id="read-quiz-btn" onclick="app.startPageQuiz()">Test Yourself on This Topic</button>
       </div>
     </div>
 

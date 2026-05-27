@@ -57,6 +57,7 @@ const app = {
     document.getElementById('screen-' + name).classList.add('active');
     this.currentScreen = name;
     if (name === 'topics') this.renderTopics();
+    if (name === 'learn') this.renderLearnList();
     if (name === 'stats') this.renderStats();
     if (name === 'home') this.updateHomeStats();
   },
@@ -388,6 +389,83 @@ const app = {
   endQuiz() {
     if (this.sessionTotal > 0 && !confirm('End this session?')) return;
     this.showScreen('home');
+  },
+
+  renderLearnList() {
+    const list = document.getElementById('learn-list');
+    list.innerHTML = '';
+    const grouped = {};
+    KNOWLEDGE_PAGES.forEach(page => {
+      const relatedQs = QUESTIONS.filter(q => q.pageId === page.id);
+      const topic = relatedQs.length > 0 ? relatedQs[0].topic : 'General';
+      if (!grouped[topic]) grouped[topic] = [];
+      grouped[topic].push(page);
+    });
+
+    Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0])).forEach(([topic, pages]) => {
+      const header = document.createElement('div');
+      header.className = 'learn-topic-header';
+      header.textContent = topic;
+      list.appendChild(header);
+
+      pages.forEach(page => {
+        const card = document.createElement('div');
+        card.className = 'topic-card';
+        card.onclick = () => this.openPage(page.id);
+        const qCount = QUESTIONS.filter(q => q.pageId === page.id).length;
+        card.innerHTML = `
+          <div class="topic-info">
+            <div class="topic-name">${page.title}</div>
+            <div class="topic-meta">${qCount} linked question${qCount !== 1 ? 's' : ''}</div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    });
+  },
+
+  currentPageId: null,
+
+  openPage(pageId) {
+    const page = KNOWLEDGE_PAGES.find(p => p.id === pageId);
+    if (!page) return;
+    this.currentPageId = pageId;
+
+    document.getElementById('read-title').textContent = page.title;
+    let html = `<div class="knowledge-page">`;
+    html += `<div class="kp-body">${page.content}</div>`;
+    if (page.keyPoints && page.keyPoints.length > 0) {
+      html += `<div class="kp-remember"><strong>Remember:</strong><ul>`;
+      page.keyPoints.forEach(p => { html += `<li>${p}</li>`; });
+      html += `</ul></div>`;
+    }
+    if (page.comparison) {
+      html += `<div class="kp-comparison"><strong>${page.comparison.title}</strong>`;
+      html += `<table class="kp-table"><thead><tr>`;
+      page.comparison.headers.forEach(h => { html += `<th>${h}</th>`; });
+      html += `</tr></thead><tbody>`;
+      page.comparison.rows.forEach(row => {
+        html += `<tr>`;
+        row.forEach(cell => { html += `<td>${cell}</td>`; });
+        html += `</tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+    html += `</div>`;
+
+    document.getElementById('read-body').innerHTML = html;
+
+    const linkedQs = QUESTIONS.filter(q => q.pageId === pageId);
+    document.getElementById('read-quiz-btn').style.display = linkedQs.length > 0 ? 'block' : 'none';
+
+    this.showScreen('read');
+  },
+
+  startPageQuiz() {
+    if (!this.currentPageId) return;
+    const qs = QUESTIONS.filter(q => q.pageId === this.currentPageId);
+    if (qs.length === 0) return;
+    this.startQuiz(this.shuffle(qs));
   }
 };
 
