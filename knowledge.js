@@ -1,4 +1,106 @@
 const KNOWLEDGE_PAGES = [
+// === FOUNDATIONAL SCAFFOLDING (READ THESE FIRST) ===
+{
+  id: "kp_big_picture",
+  title: "The AI Engineering Landscape: How Everything Connects",
+  content: `<p>AI engineering is the discipline of building products powered by large language models. It sits between ML research (which creates the models) and software engineering (which builds products). Here's how the entire field maps together:</p>
+<p><strong>Layer 1 — Foundation Models (you don't do this, but must understand it):</strong> Massive pre-training on trillions of tokens creates a base model that "understands" language. Key concepts: transformer architecture, attention, tokenization, scaling laws, pre-training objectives (next-token prediction). This costs $10-100M+ and is done by a handful of companies (OpenAI, Meta, Anthropic, Google, Mistral).</p>
+<p><strong>Layer 2 — Alignment & Fine-tuning (sometimes you do this):</strong> The base model is turned into an assistant through RLHF/DPO, then optionally specialized through fine-tuning (LoRA/QLoRA). Key decisions: when to fine-tune vs prompt, what data to use, how to avoid catastrophic forgetting.</p>
+<p><strong>Layer 3 — Application Architecture (your core work):</strong> Building the system around the model. This is where RAG, agents, tool use, guardrails, prompt engineering, evaluation, and orchestration live. 90% of AI engineering work happens here. You're making decisions about: how to provide the model with knowledge (RAG), how to let it take actions (agents/tools), how to structure interactions (prompts), and how to ensure quality (eval).</p>
+<p><strong>Layer 4 — Production & Operations:</strong> Serving at scale (vLLM, TGI), monitoring (Langfuse), cost optimization (caching, routing), security (prompt injection defense), and compliance (EU AI Act). The "last mile" that determines whether your system is a demo or a product.</p>
+<p><strong>The key insight:</strong> Most AI engineering interviews test Layers 3 and 4 — you're not expected to train a foundation model, but you must understand Layer 1 deeply enough to make informed decisions at Layers 3-4.</p>`,
+  keyPoints: [
+    "Layer 1: Foundation models (pre-training). Layer 2: Alignment (RLHF/DPO/fine-tuning). Layer 3: Application architecture (RAG, agents, prompts). Layer 4: Production ops.",
+    "90% of AI engineering work is Layer 3: RAG, agents, prompts, evaluation, orchestration",
+    "You don't train foundation models but must understand them to make good application decisions",
+    "Interview focus: Layers 3-4 (application architecture + production), with Layer 1-2 knowledge for depth"
+  ]
+},
+{
+  id: "kp_llm_end_to_end",
+  title: "How an LLM Actually Works: End-to-End in One Page",
+  content: `<p>When you send "What is the capital of France?" to an LLM, here's exactly what happens, layer by layer:</p>
+<p><strong>1. Tokenization:</strong> Your text is split into subword tokens: ["What", " is", " the", " capital", " of", " France", "?"]. Each token maps to an integer ID from the vocabulary (e.g., "France" → 6181). This is a lookup table, not neural network computation.</p>
+<p><strong>2. Embedding:</strong> Each token ID is converted to a dense vector (e.g., 4096 dimensions) via the embedding matrix. Position information is added (RoPE rotations applied to the vectors). You now have a sequence of position-aware vectors.</p>
+<p><strong>3. Transformer layers (×N, typically 32-80 layers):</strong> Each layer applies:</p>
+<p>  a) <strong>Attention:</strong> Each token computes Q, K, V → attention scores via Q·K/√d → softmax → weighted sum of V. Each token now contains information from relevant other tokens.</p>
+<p>  b) <strong>Feed-forward network (FFN):</strong> Two large linear transformations with a nonlinearity (GeLU/SiLU) between them. This is where most parameters live. This "processes" the attention output.</p>
+<p>  c) <strong>Residual connections + RMSNorm:</strong> Skip connections prevent gradient death. Normalization stabilizes values between layers.</p>
+<p><strong>4. Output projection:</strong> The final layer's output for the LAST token is projected to vocabulary size (e.g., 4096-dim → 32000-dim) via the language model head. Each dimension represents one token's log-probability.</p>
+<p><strong>5. Sampling:</strong> Apply temperature, top-p, top-k to the probability distribution. Sample one token. Append it to the sequence. Go back to step 3 for the next token. Repeat until done.</p>
+<p><strong>Cost reality:</strong> Step 3 dominates — most compute goes to attention + FFN across all layers. For a 70B model, that's billions of multiply-accumulate operations PER TOKEN generated. This is why generation is expensive and why optimizations (KV-cache, Flash Attention, quantization) matter so much.</p>`,
+  keyPoints: [
+    "Pipeline: Tokenize → Embed (+position) → N×[Attention → FFN → Residual+Norm] → Project to vocab → Sample",
+    "Each token goes through ALL layers. For 70B model = billions of operations PER generated token.",
+    "Attention = how tokens communicate. FFN = where information is processed. Both are needed.",
+    "Generation is sequential: predict one token → append → predict next. KV-cache avoids recomputing past tokens."
+  ]
+},
+{
+  id: "kp_decision_tree",
+  title: "The AI Engineer's Decision Tree: Prompt vs RAG vs Fine-tune vs Agent",
+  content: `<p>The most common interview question in AI engineering: "How would you build X?" The answer depends on understanding when each approach is appropriate. Here's the decision framework:</p>
+<p><strong>Start with prompting (always try this first):</strong></p>
+<p>• The model already has the knowledge (general facts, common tasks)</p>
+<p>• Behavior can be specified through instructions + examples</p>
+<p>• You need flexibility to iterate quickly</p>
+<p>• Few-shot examples can demonstrate the pattern</p>
+<p><strong>Add RAG when:</strong></p>
+<p>• The model needs knowledge it doesn't have (proprietary docs, recent info, specific data)</p>
+<p>• Answers must be traceable/citable</p>
+<p>• Knowledge changes over time</p>
+<p>• You want to avoid hallucination on factual queries</p>
+<p><strong>Fine-tune when:</strong></p>
+<p>• You need consistent style/format that prompting can't achieve</p>
+<p>• Domain-specific reasoning patterns are needed</p>
+<p>• You want to reduce latency/cost (shorter prompts after fine-tuning)</p>
+<p>• You have 1000+ quality examples AND exhausted prompting/RAG</p>
+<p><strong>Use agents when:</strong></p>
+<p>• The task requires multiple steps with decisions based on intermediate results</p>
+<p>• The model needs to interact with external systems (APIs, databases, tools)</p>
+<p>• The path to the answer isn't known in advance</p>
+<p>• Error recovery and adaptation are needed</p>
+<p><strong>Combine them:</strong> Real systems often use multiple approaches. A RAG agent with fine-tuned embedding model and engineered prompts is common. The decision tree helps you choose the PRIMARY architecture.</p>`,
+  keyPoints: [
+    "Always try prompting first (cheapest, fastest, most flexible). Then RAG → fine-tuning → agents as needed.",
+    "RAG = external knowledge. Fine-tuning = behavioral consistency. Agents = multi-step autonomy. Prompting = everything else.",
+    "Fine-tuning is the LAST resort, not the first tool. Expensive, inflexible, risks catastrophic forgetting.",
+    "Real systems combine approaches: RAG agent + engineered prompts + fine-tuned embeddings is common."
+  ]
+},
+{
+  id: "kp_tradeoffs",
+  title: "The 10 Critical Tradeoffs in AI Engineering",
+  content: `<p>Every AI engineering decision involves tradeoffs. Interviewers test whether you understand BOTH sides. Here are the 10 you must know cold:</p>
+<p><strong>1. Model size vs. speed/cost:</strong> Larger = more capable but slower and more expensive per token. Mitigation: model routing, quantization, distillation.</p>
+<p><strong>2. Context length vs. quality:</strong> More context = more info available but "lost in the middle" effect + higher cost. Mitigation: relevance-based ordering, chunking, summarization.</p>
+<p><strong>3. Temperature: determinism vs. creativity:</strong> Low = predictable/factual. High = creative/diverse. Depends on task: extraction needs 0, brainstorming needs 0.7+.</p>
+<p><strong>4. Chunk size in RAG: precision vs. context:</strong> Small chunks = precise retrieval but missing context. Large chunks = full context but diluted embeddings. Sweet spot: 256-512 tokens with overlap.</p>
+<p><strong>5. RAG vs. fine-tuning for knowledge:</strong> RAG = updateable, citable, no training. Fine-tuning = faster inference, consistent style, but static and expensive.</p>
+<p><strong>6. Guardrails vs. latency:</strong> More safety checks = slower responses. Mitigation: fast checks sync, expensive checks async.</p>
+<p><strong>7. Open vs. closed models:</strong> Open = privacy, customization, no vendor lock-in. Closed = usually more capable, managed, faster iteration.</p>
+<p><strong>8. Agents vs. chains: flexibility vs. reliability:</strong> Agents can handle unknowns but are unpredictable. Chains are reliable but brittle to novel situations.</p>
+<p><strong>9. Quantization: memory vs. quality:</strong> Lower precision = smaller/faster but quality drops. INT4 for most uses, FP16 when quality is critical.</p>
+<p><strong>10. Cost vs. quality (the meta-tradeoff):</strong> Better models cost more per token. Mitigation: routing easy queries to cheap models, caching, batching.</p>`,
+  keyPoints: [
+    "Every decision has two valid sides. Interviewers want to hear you articulate BOTH, then make a reasoned choice.",
+    "The meta-skill: knowing which tradeoff applies to the current problem and choosing the right point on the spectrum.",
+    "Most tradeoffs have mitigations (routing, caching, progressive enhancement) — knowing these shows senior thinking.",
+    "Never say 'always use X'. Always say 'it depends on...' and then articulate the tradeoff clearly."
+  ],
+  comparison: {
+    title: "Quick Reference: 10 Key Tradeoffs",
+    headers: ["Tradeoff", "Left Side", "Right Side", "Mitigation"],
+    rows: [
+      ["Model size", "Smaller (fast, cheap)", "Larger (capable)", "Routing, quantization"],
+      ["Temperature", "Low (deterministic)", "High (creative)", "Task-specific setting"],
+      ["Chunk size", "Small (precise)", "Large (context)", "256-512 + overlap"],
+      ["Knowledge source", "RAG (updateable)", "Fine-tune (fast)", "Try RAG first"],
+      ["Architecture", "Chain (reliable)", "Agent (flexible)", "Agent only if steps unknown"]
+    ]
+  }
+},
+
 {
   id: "kp_attention",
   title: "Self-Attention: The Core of Transformers",

@@ -1,4 +1,108 @@
 const QUESTIONS = [
+// === FOUNDATIONAL / ARCHITECTURAL THINKING ===
+{
+  id: "bp1", topic: "AI Engineering Architecture", pageId: "kp_big_picture",
+  question: "Where does 90% of AI engineering work happen?",
+  options: [
+    "Pre-training foundation models",
+    "Application architecture: RAG, agents, prompts, evaluation, and orchestration",
+    "Hardware optimization and GPU programming",
+    "Academic research on novel architectures"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Pre-training is done by a handful of companies (OpenAI, Meta, etc.) and requires hundreds of millions of dollars. Most engineers never do this.",
+    "Correct. AI engineering is primarily about building the APPLICATION layer: how to give models knowledge (RAG), let them act (agents), structure interactions (prompts), and ensure quality (eval). You're using foundation models as components, not building them. This is Layer 3 — and it's where interviews focus.",
+    "Incorrect. Hardware optimization (CUDA kernels, GPU programming) is systems engineering, not AI engineering. You use optimized serving frameworks (vLLM) rather than writing GPU code.",
+    "Incorrect. Research creates new architectures. AI engineering APPLIES existing models to build products. Different roles with different skill sets."
+  ]
+},
+{
+  id: "bp2", topic: "AI Engineering Architecture", pageId: "kp_decision_tree",
+  question: "A company wants to build a customer support bot that answers questions about their product documentation. What's the RIGHT approach?",
+  options: [
+    "Fine-tune GPT-4 on all their documentation",
+    "Build a RAG system: index docs in a vector store, retrieve relevant chunks per query, generate grounded answers",
+    "Train a custom LLM from scratch on their data",
+    "Use a basic chatbot with canned responses"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Fine-tuning is overkill here: (1) Can't fine-tune GPT-4. (2) Documentation changes frequently — you'd need to retrain constantly. (3) Fine-tuned knowledge isn't citable. RAG solves all these issues.",
+    "Correct. This is the textbook RAG use case: (1) Knowledge is in specific documents (not general knowledge). (2) Docs update frequently. (3) You need citations. (4) Must avoid hallucination. Index the docs, retrieve relevant chunks for each query, and generate grounded answers with citations. Start simple, optimize retrieval iteratively.",
+    "Incorrect. Training from scratch costs millions and is totally unnecessary. You'd use an existing model and give it access to the docs via RAG.",
+    "Incorrect. Canned responses can't handle the variety of real user questions about complex documentation. You need flexible natural language understanding and generation."
+  ]
+},
+{
+  id: "bp3", topic: "AI Engineering Architecture", pageId: "kp_decision_tree",
+  question: "When should you reach for an agent architecture rather than a simpler approach?",
+  options: [
+    "Always — agents are the most advanced and therefore best approach",
+    "When the task requires multiple steps whose path depends on intermediate results and isn't known in advance",
+    "When you want the fastest possible response time",
+    "When the task involves text generation"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Agents add complexity, cost, latency, and unpredictability. Use them only when simpler approaches can't work. Most tasks are better served by prompt engineering or RAG.",
+    "Correct. Agents shine when: (1) Number of steps is unknown. (2) Next step depends on previous results. (3) Error recovery is needed. (4) Multiple tools may be needed. Example: debugging (depends on what you find), research (depends on search results), complex data analysis (depends on data shape). If the workflow is fixed — just chain steps together without an agent.",
+    "Incorrect. Agents are SLOWER — multiple LLM calls in a loop. If speed matters, use a simple prompt or chain.",
+    "Incorrect. Basic text generation is a single LLM call. No agent needed. Agents are for multi-step autonomy, not text generation."
+  ]
+},
+{
+  id: "bp4", topic: "AI Engineering Architecture", pageId: "kp_tradeoffs",
+  question: "An interviewer asks: 'Should we use RAG or fine-tuning for our use case?' What's the best STRUCTURE for your answer?",
+  options: [
+    "Always recommend RAG because it's more modern",
+    "Articulate both sides of the tradeoff, ask clarifying questions about their specific constraints, then make a reasoned recommendation",
+    "Always recommend fine-tuning because it's more thorough",
+    "Say it depends and ask them what they prefer"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Blanket recommendations show lack of nuance. RAG isn't always better — fine-tuning wins for consistent style, reduced latency, and specialized reasoning.",
+    "Correct. The senior answer: 'RAG is updateable, citable, and requires no training — ideal when knowledge changes or traceability matters. Fine-tuning gives consistent style, lower latency, and specialized behavior — ideal when you need behavioral changes. For your case, I'd ask: does the knowledge change frequently? Do you need citations? Is consistent format critical? Then recommend based on their answers.' This shows you understand both sides AND can apply them to context.",
+    "Incorrect. Fine-tuning isn't always better — it's expensive, static, risks forgetting, and loses traceability.",
+    "Incorrect. Saying 'it depends' without elaborating shows you can't actually reason about the tradeoff. You need to explain WHAT it depends on."
+  ]
+},
+{
+  id: "bp5", topic: "AI Engineering Architecture", pageId: "kp_llm_end_to_end",
+  question: "In a transformer's forward pass, where do most of the model's parameters live?",
+  options: [
+    "In the attention mechanism (Q/K/V projections)",
+    "In the feed-forward networks (FFN) between attention layers",
+    "In the embedding matrix",
+    "In the output projection layer"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Attention projections are significant but not the majority. For a d-dim model with 4 projections: 4 × d × d = 4d² params per layer.",
+    "Correct. The FFN in each layer typically has two matrices: d×4d and 4d×d = 8d² parameters per layer. That's DOUBLE the attention parameters (4d²). With 80 layers in a large model, FFN dominates the total parameter count. This is where the model 'stores' and 'processes' knowledge — attention routes information, FFN transforms it.",
+    "Incorrect. The embedding matrix is large (vocab_size × d) but is a small fraction of total parameters in large models. E.g., 32000 × 4096 = 131M in a 70B model.",
+    "Incorrect. The output projection is often tied with (shares weights with) the embedding matrix. Even if separate, it's one layer vs 80+ FFN layers."
+  ]
+},
+{
+  id: "bp6", topic: "AI Engineering Architecture", pageId: "kp_tradeoffs",
+  question: "A system uses GPT-4 for all queries. It works well but costs are high. What's the most impactful cost reduction strategy?",
+  options: [
+    "Reduce the system prompt length",
+    "Route easy queries (80%) to a cheaper model and only use GPT-4 for complex queries (20%)",
+    "Reduce response length with max_tokens",
+    "Switch entirely to a cheaper model"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Shorter prompts help but the savings are modest (maybe 20% if you trim aggressively). Routing is 5-10× more impactful.",
+    "Correct. Model routing is the highest-impact cost lever. If 80% of queries are 'easy' (simple factual, formatting, basic classification), routing them to GPT-4o-mini (20× cheaper) while keeping GPT-4 for complex queries gives ~70% cost reduction with minimal quality impact. This is the first thing senior engineers recommend.",
+    "Incorrect. Limiting output length saves some cost but may degrade quality. And output tokens are often a smaller fraction of cost than input tokens (long prompts).",
+    "Incorrect. Switching entirely trades cost for quality across ALL queries. Routing is better — it preserves quality where needed and saves where possible."
+  ]
+}
+,
 // === DOMAIN 1: LLM FUNDAMENTALS ===
 {
   id: "lf1", topic: "LLM Fundamentals", pageId: "kp_attention",
