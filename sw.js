@@ -1,9 +1,10 @@
-const CACHE_NAME = 'aimcq-v16';
+const CACHE_NAME = 'aimcq-v17';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './reference.js',
   './library.js',
   './modules.js',
   './knowledge.js',

@@ -45,6 +45,7 @@
         <button class="btn btn-secondary btn-lg" onclick="app.startFlagged()">Flagged Questions</button>
         <button class="btn btn-accent btn-lg" onclick="app.showScreen('modules')">Learning Corner</button>
         <button class="btn btn-secondary btn-lg" onclick="app.showScreen('library')">Course Material</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('reference')">Reference Book (227 chapters)</button>
         <button class="btn btn-secondary btn-lg" onclick="app.showScreen('learn')">Knowledge Pages</button>
       </div>
       <div class="home-footer">
@@ -85,14 +86,14 @@
       </div>
     </div>
 
-    <!-- Library Screen (Reading List) -->
+    <!-- Library Screen (Course Material) -->
     <div id="screen-library" class="screen">
       <div class="screen-header">
         <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
-        <h2>Reading List</h2>
+        <h2>Course Material</h2>
         <div class="spacer"></div>
       </div>
-      <p class="module-intro">Full course chapters covering the LLM Engineering curriculum. Read offline, no internet needed. Based on the AI Engineering from Scratch curriculum (MIT licensed).</p>
+      <p class="module-intro">Original course chapters covering LLM Engineering. Read offline.</p>
       <div id="library-list" class="topic-list"></div>
     </div>
 
@@ -104,6 +105,27 @@
         <div class="spacer"></div>
       </div>
       <div class="module-body" id="library-item-body"></div>
+    </div>
+
+    <!-- Reference Book Screen -->
+    <div id="screen-reference" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Reference Book</h2>
+        <div class="spacer"></div>
+      </div>
+      <p class="module-intro">AI Engineering from Scratch (Rohit Ghumare, MIT License). 227 chapters across 9 phases. Full offline textbook.</p>
+      <div id="reference-list" class="topic-list"></div>
+    </div>
+
+    <!-- Reference Chapter Screen -->
+    <div id="screen-ref-chapter" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('reference')">&larr;</button>
+        <h2 id="ref-chapter-title">Chapter</h2>
+        <div class="spacer"></div>
+      </div>
+      <div class="module-body" id="ref-chapter-body"></div>
     </div>
 
     <!-- Modules Screen (Learning Corner) -->
@@ -181,6 +203,7 @@
     </div>
   </div>
 
+  <script src="reference.js"></script>
   <script src="library.js"></script>
   <script src="modules.js"></script>
   <script src="knowledge.js"></script>

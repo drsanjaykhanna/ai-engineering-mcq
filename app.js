@@ -59,6 +59,7 @@ const app = {
     if (name === 'topics') this.renderTopics();
     if (name === 'modules') this.renderModules();
     if (name === 'library') this.renderLibrary();
+    if (name === 'reference') this.renderReference();
     if (name === 'learn') this.renderLearnList();
     if (name === 'stats') this.renderStats();
     if (name === 'home') this.updateHomeStats();
@@ -391,6 +392,39 @@ const app = {
   endQuiz() {
     if (this.sessionTotal > 0 && !confirm('End this session?')) return;
     this.showScreen('home');
+  },
+
+  renderReference() {
+    const list = document.getElementById('reference-list');
+    list.innerHTML = '';
+    let currentPhase = '';
+    REFERENCE_BOOK.forEach((ch, i) => {
+      if (ch.phase !== currentPhase) {
+        currentPhase = ch.phase;
+        const header = document.createElement('div');
+        header.className = 'learn-topic-header';
+        header.textContent = currentPhase;
+        list.appendChild(header);
+      }
+      const card = document.createElement('div');
+      card.className = 'topic-card';
+      card.onclick = () => this.openRefChapter(i);
+      card.innerHTML = `
+        <div class="topic-info">
+          <div class="topic-name">${ch.title}</div>
+          <div class="topic-meta">${ch.lesson}</div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  },
+
+  openRefChapter(idx) {
+    const ch = REFERENCE_BOOK[idx];
+    if (!ch) return;
+    document.getElementById('ref-chapter-title').textContent = ch.title;
+    document.getElementById('ref-chapter-body').innerHTML = ch.content;
+    this.showScreen('ref-chapter');
   },
 
   renderLibrary() {
