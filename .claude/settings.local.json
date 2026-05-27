@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git config *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(ls /tmp/aie-repo/phases/11-llm-engineering/ 2>/dev/null | head -20 || echo \"Repo not found, need to clone\")",
+      "Read(//tmp/aie-repo/phases/11-llm-engineering/**)"
     ]
   }
 }
