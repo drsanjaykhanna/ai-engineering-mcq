@@ -1508,5 +1508,198 @@ const KNOWLEDGE_PAGES = [
     "Serving stack: vLLM (production GPU), Ollama (local dev), llama.cpp (CPU/edge). Choose by use case.",
     "Speculative decoding: small model drafts, big model verifies in parallel. 2-3× faster, zero quality loss."
   ]
+},
+// === HEALTH AI ===
+{
+  id: "kp_health_ai_landscape",
+  title: "Health AI: The Landscape, Regulations, and Why It's Different",
+  content: `<p>Health AI is the highest-stakes application domain for LLMs. The difference from general AI engineering: <strong>wrong outputs can harm or kill patients</strong>. This fundamentally changes every architectural decision.</p>
+<p><strong>Key health AI models:</strong></p>
+<p>• <strong>Med-PaLM 2 (Google):</strong> First to reach "expert-level" on USMLE-style questions (86.5%). Fine-tuned on medical Q&A with physician-curated instruction data.</p>
+<p>• <strong>GPT-4 (OpenAI):</strong> Passed USMLE without medical-specific fine-tuning — demonstrating that scale alone produces medical knowledge. But passing an exam ≠ safe clinical use.</p>
+<p>• <strong>Med-Gemini (Google):</strong> Multimodal medical model handling text, images (radiology, pathology, dermatology), and genomics data.</p>
+<p>• <strong>BioGPT, PMC-LLaMA, Clinical-BERT:</strong> Domain-specific models pre-trained or fine-tuned on biomedical literature (PubMed, clinical notes).</p>
+<p><strong>Why health AI is different from general AI:</strong></p>
+<p>• <strong>Regulatory burden:</strong> FDA (US), CE marking (EU), MHRA (UK). Medical AI is a regulated medical device. You can't just ship an MVP.</p>
+<p>• <strong>Liability:</strong> If the AI misdiagnoses, who is liable? The developer? The clinician? The institution? Unsettled legal territory.</p>
+<p>• <strong>Hallucination = harm:</strong> A chatbot hallucinating a restaurant name is annoying. A medical AI hallucinating a drug interaction is dangerous. Zero tolerance for confident wrong answers.</p>
+<p>• <strong>Privacy (HIPAA/GDPR):</strong> Patient data cannot be sent to third-party APIs without de-identification. This often means self-hosted models, not OpenAI/Anthropic APIs.</p>
+<p>• <strong>Explainability:</strong> Clinicians need to understand WHY the AI made a recommendation. Black-box predictions are unacceptable for clinical decision support.</p>`,
+  keyPoints: [
+    "GPT-4 passes USMLE but passing an exam ≠ safe for clinical use. Exam accuracy ≠ clinical safety.",
+    "Regulatory: FDA (US), CE (EU), MHRA (UK). Medical AI = regulated medical device, not just software.",
+    "HIPAA/GDPR: patient data can't go to third-party APIs without de-identification → often need self-hosted models",
+    "Hallucination in medicine = potential patient harm. Zero tolerance. Requires human-in-the-loop always."
+  ]
+},
+{
+  id: "kp_health_ai_rag",
+  title: "Medical RAG: Building Clinical Knowledge Systems",
+  content: `<p>RAG is the most promising architecture for medical AI because it provides <strong>grounding, citations, and updateability</strong> — all critical for clinical use.</p>
+<p><strong>Medical knowledge sources for RAG:</strong></p>
+<p>• <strong>Clinical guidelines:</strong> NICE, WHO, AHA/ACC, specialty guidelines. Authoritative, evidence-based, regularly updated.</p>
+<p>• <strong>Drug databases:</strong> BNF, DrugBank, RxNorm, FDA drug labels. Critical for drug interaction checking, dosing, contraindications.</p>
+<p>• <strong>Medical literature:</strong> PubMed/MEDLINE (~36M articles), Cochrane systematic reviews, UpToDate.</p>
+<p>• <strong>Clinical ontologies:</strong> SNOMED-CT, ICD-10/11, LOINC, RxNorm. Standardized medical terminology for interoperability.</p>
+<p>• <strong>EHR data:</strong> Electronic health records (FHIR format). Patient-specific context for personalized recommendations.</p>
+<p><strong>Medical RAG challenges:</strong></p>
+<p>• <strong>Terminology mismatch:</strong> Patients say "heart attack," clinicians say "myocardial infarction," literature says "STEMI/NSTEMI." The embedding model must understand these are the same concept. Medical embedding models (PubMedBERT) outperform general models here.</p>
+<p>• <strong>Conflicting evidence:</strong> Guideline A recommends X, study B suggests Y. The system must surface the conflict, not silently pick one. Recency and evidence grade matter.</p>
+<p>• <strong>Citation is mandatory:</strong> Every clinical recommendation must trace back to a specific guideline, study, or evidence source. "The AI said so" is never acceptable in medicine.</p>
+<p>• <strong>Temporal validity:</strong> Medical knowledge changes. A 2019 guideline may be superseded by a 2024 update. The RAG system must prefer current evidence and flag outdated sources.</p>`,
+  keyPoints: [
+    "Medical RAG sources: clinical guidelines (NICE, WHO), drug databases (BNF, DrugBank), PubMed, SNOMED-CT, EHR/FHIR",
+    "Terminology mismatch: patients, clinicians, and literature use different terms for the same concepts → need medical embeddings",
+    "Citations are MANDATORY in medical AI. Every recommendation must trace to a specific evidence source.",
+    "Temporal validity: prefer current guidelines, flag outdated evidence. Medicine changes — the index must keep up."
+  ]
+},
+{
+  id: "kp_health_ai_safety",
+  title: "Safety in Medical AI: Guardrails, Validation, and Human-in-the-Loop",
+  content: `<p>Medical AI systems require safety mechanisms far beyond what general-purpose AI needs. The standard is not "good enough" — it's "demonstrably safe."</p>
+<p><strong>The golden rule:</strong> Medical AI should SUPPORT clinical decisions, never REPLACE clinician judgment. The AI is a tool; the clinician is the decision-maker. This isn't just ethics — it's how regulators see it.</p>
+<p><strong>Required safety layers:</strong></p>
+<p>• <strong>Scope limitation:</strong> The system must know what it CAN'T do. "I cannot diagnose conditions. Please consult your healthcare provider." Hard-coded boundaries for out-of-scope queries.</p>
+<p>• <strong>Confidence calibration:</strong> When uncertain, the system must SAY it's uncertain — not guess confidently. This is the opposite of how RLHF-trained models naturally behave (sycophancy).</p>
+<p>• <strong>Emergency detection:</strong> If the query suggests a medical emergency ("chest pain," "difficulty breathing," "suicidal thoughts"), the system must immediately recommend emergency services, not attempt diagnosis.</p>
+<p>• <strong>Drug interaction checking:</strong> If recommending or discussing medications, cross-reference with drug interaction databases. Never rely on the LLM's parametric knowledge for drug safety.</p>
+<p>• <strong>Demographic sensitivity:</strong> Medical recommendations may vary by age, sex, pregnancy status, ethnicity (e.g., different cancer screening guidelines). The system must account for this or ask.</p>
+<p><strong>Validation requirements:</strong></p>
+<p>• Clinical validation studies (does it actually improve outcomes?)</p>
+<p>• Bias auditing across demographics (does it perform worse for certain populations?)</p>
+<p>• Failure mode analysis (what happens when it's wrong? Is the failure graceful or catastrophic?)</p>
+<p>• Continuous monitoring post-deployment (performance can degrade as medical knowledge evolves)</p>`,
+  keyPoints: [
+    "Golden rule: AI SUPPORTS decisions, never REPLACES clinician judgment. This is regulatory, ethical, and legal.",
+    "Emergency detection: chest pain, breathing difficulty, suicidal ideation → immediate redirect to emergency services, not diagnosis",
+    "Drug safety: NEVER rely on LLM memory for drug interactions. Always cross-reference with structured drug databases.",
+    "Bias auditing: must verify equal performance across demographics. Medical AI that works worse for some populations is unacceptable."
+  ]
+},
+{
+  id: "kp_health_ai_privacy",
+  title: "Health Data Privacy: HIPAA, De-identification, and Self-Hosted Models",
+  content: `<p><strong>Health data is the most regulated data category.</strong> Sending patient data to an LLM API without proper safeguards can result in massive fines, lawsuits, and loss of clinical trust.</p>
+<p><strong>HIPAA (US):</strong> Protected Health Information (PHI) — any data that can identify a patient (name, DOB, medical record number, diagnoses linked to identity). PHI cannot be sent to third-party services unless: (1) a Business Associate Agreement (BAA) is in place, OR (2) data is fully de-identified per HIPAA Safe Harbor (remove 18 identifier categories).</p>
+<p><strong>GDPR (EU/UK):</strong> Health data is "special category" under Article 9 — strictest protection level. Requires explicit consent for processing, data minimization, and right to erasure. Cross-border transfer restrictions apply (can't send EU patient data to US servers without adequacy provisions).</p>
+<p><strong>Architectural implications for AI engineers:</strong></p>
+<p>• <strong>Self-hosted models:</strong> If you can't de-identify reliably, host models on-premises or in a private cloud with BAA. Llama, Mistral, and medical-specific models can run self-hosted via vLLM or Ollama.</p>
+<p>• <strong>De-identification pipeline:</strong> Before ANY data touches an LLM: strip names, dates, locations, MRNs, and all 18 HIPAA identifiers. Use NER models + rule-based systems. Validate with re-identification risk assessment.</p>
+<p>• <strong>API providers with BAAs:</strong> Azure OpenAI, Google Cloud Vertex AI, and AWS Bedrock offer HIPAA-eligible environments with BAAs. Standard OpenAI/Anthropic APIs do NOT have BAAs for most customers.</p>
+<p>• <strong>Audit logging:</strong> Log every access to patient data through the AI system. Who queried what, when, for which patient. Required for HIPAA compliance.</p>
+<p>• <strong>Minimum necessary:</strong> Only include the minimum patient data needed for the AI task. Don't dump entire records into prompts when you only need the medication list.</p>`,
+  keyPoints: [
+    "HIPAA: 18 identifiers must be removed for de-identification. BAA required for any third-party processing PHI.",
+    "Standard OpenAI/Anthropic APIs: NO BAA for most customers. Use Azure OpenAI, Vertex AI, or self-hosted models.",
+    "Self-hosting (Llama/Mistral via vLLM): safest for PHI. Data never leaves your infrastructure.",
+    "Minimum necessary principle: only include the patient data actually needed for the AI task. Don't over-share."
+  ]
+},
+{
+  id: "kp_health_ai_clinical_nlp",
+  title: "Clinical NLP: Extracting Structure from Medical Text",
+  content: `<p><strong>Clinical NLP</strong> extracts structured information from unstructured clinical text — discharge summaries, progress notes, radiology reports, pathology reports. This is one of the highest-value applications of AI in healthcare.</p>
+<p><strong>Key tasks:</strong></p>
+<p>• <strong>Named Entity Recognition (NER):</strong> Identify medical entities: diseases, symptoms, medications, procedures, anatomical locations. "Patient has type 2 diabetes on metformin" → entities: {disease: "type 2 diabetes", medication: "metformin"}.</p>
+<p>• <strong>Relation extraction:</strong> Determine relationships between entities. "Metformin prescribed FOR diabetes" → (metformin, treats, diabetes). "Penicillin ALLERGY" → (patient, allergic_to, penicillin).</p>
+<p>• <strong>Negation detection:</strong> Critically important — "no evidence of malignancy" means the opposite of "evidence of malignancy." Clinical text is full of negation. Systems that miss negation will flag healthy patients as sick.</p>
+<p>• <strong>Temporal reasoning:</strong> "Previously had pneumonia" vs "currently has pneumonia." Past medical history vs active problems.</p>
+<p>• <strong>Section detection:</strong> Clinical notes have sections (Chief Complaint, History of Present Illness, Medications, Assessment/Plan). Knowing WHICH section text comes from changes its meaning.</p>
+<p><strong>LLMs for clinical NLP:</strong> GPT-4 and Claude can perform these tasks zero-shot with remarkable accuracy, often matching specialized models. But: (1) PHI concerns limit API use, (2) Latency may be too high for real-time EHR integration, (3) Smaller specialized models (ClinicalBERT, BioBERT) are faster and deployable on-premises.</p>`,
+  keyPoints: [
+    "Key tasks: NER (entities), relation extraction (connections), negation detection (critical!), temporal reasoning",
+    "Negation is make-or-break: 'no malignancy' vs 'malignancy' — miss this and you flag healthy patients as sick",
+    "LLMs can do clinical NLP zero-shot but PHI + latency concerns often favor smaller on-premise models (ClinicalBERT)",
+    "Section context matters: 'diabetes' in Past Medical History ≠ 'diabetes' in Active Problems"
+  ]
+},
+{
+  id: "kp_health_ai_imaging",
+  title: "Medical Imaging AI: Radiology, Pathology, and Multimodal Models",
+  content: `<p><strong>Medical imaging AI</strong> is the most mature clinical AI application. Models can detect findings in radiology, pathology, and dermatology images — sometimes matching or exceeding specialist performance on specific tasks.</p>
+<p><strong>Key applications:</strong></p>
+<p>• <strong>Radiology:</strong> Chest X-ray triage (detect critical findings like pneumothorax, fractures), CT screening (lung nodule detection, liver lesions), mammography (breast cancer detection — Google's model matched radiologist performance).</p>
+<p>• <strong>Pathology:</strong> Whole-slide image analysis for cancer grading, mitosis detection, biomarker quantification. Pathology images are enormous (gigapixels) requiring specialized architectures.</p>
+<p>• <strong>Dermatology:</strong> Skin lesion classification (melanoma vs benign). One of the first areas where AI matched dermatologists (Stanford, 2017).</p>
+<p>• <strong>Ophthalmology:</strong> Diabetic retinopathy screening from fundus photographs. One of the first FDA-approved autonomous AI systems (IDx-DR, 2018).</p>
+<p><strong>Multimodal medical models:</strong> Med-Gemini and similar models combine imaging with text — a radiologist can ask "Does this chest X-ray show signs of pneumonia?" and get a grounded visual + textual answer. This is the frontier: models that reason across imaging, clinical notes, lab values, and guidelines simultaneously.</p>
+<p><strong>Challenges:</strong></p>
+<p>• <strong>Distribution shift:</strong> Model trained on Hospital A's X-ray machine performs worse on Hospital B's different machine/settings. Requires multi-site validation.</p>
+<p>• <strong>Label quality:</strong> Medical image labels come from radiologist reports which may be wrong, ambiguous, or inconsistent between readers.</p>
+<p>• <strong>Regulatory pathway:</strong> FDA 510(k) or De Novo for diagnostic AI. Requires clinical validation studies showing safety and efficacy compared to a predicate device or standard of care.</p>`,
+  keyPoints: [
+    "Most mature area: radiology (chest X-ray, mammography), pathology, dermatology, ophthalmology",
+    "IDx-DR (diabetic retinopathy): first FDA-approved fully autonomous diagnostic AI (2018)",
+    "Distribution shift: model from Hospital A may fail at Hospital B. Different equipment, populations, protocols.",
+    "Multimodal frontier: models that combine imaging + text + labs + guidelines for integrated clinical reasoning"
+  ]
+},
+{
+  id: "kp_health_ai_regulation",
+  title: "Medical AI Regulation: FDA, CE Marking, and the SaMD Framework",
+  content: `<p>Medical AI is regulated as <strong>Software as a Medical Device (SaMD)</strong>. Understanding the regulatory framework is essential — you can't deploy without it.</p>
+<p><strong>FDA (United States):</strong></p>
+<p>• <strong>Risk classification:</strong> Class I (low risk, e.g., wellness apps), Class II (moderate, e.g., AI-assisted diagnosis — most medical AI), Class III (high, e.g., autonomous treatment decisions).</p>
+<p>• <strong>Pathways:</strong> 510(k) (prove substantial equivalence to existing device), De Novo (new device type without predicate), PMA (highest evidence bar for Class III).</p>
+<p>• <strong>Predetermined Change Control Plan:</strong> FDA's framework for AI that learns/updates post-deployment. You can pre-specify what types of updates are allowed without re-submission.</p>
+<p><strong>EU MDR (Europe):</strong></p>
+<p>• CE marking required. Classification under IMDRF framework. Risk class I-III.</p>
+<p>• Clinical evaluation report required demonstrating safety and performance.</p>
+<p>• Post-market surveillance obligations.</p>
+<p><strong>Key regulatory concepts for AI engineers:</strong></p>
+<p>• <strong>Intended use:</strong> Exactly what the device does and for whom. Regulatory scope is defined by intended use. "Assists radiologists" has different requirements than "autonomously diagnoses."</p>
+<p>• <strong>Clinical validation:</strong> Prospective or retrospective study showing the AI performs as claimed. Not just benchmark accuracy — real-world clinical performance.</p>
+<p>• <strong>Locked vs adaptive algorithms:</strong> A "locked" algorithm doesn't change after deployment (simpler regulatory path). An "adaptive" algorithm learns from new data post-deployment (requires predetermined change control plan).</p>
+<p>• <strong>Transparency:</strong> Clinicians must understand the AI's limitations, intended population, and when NOT to trust it.</p>`,
+  keyPoints: [
+    "SaMD = Software as a Medical Device. Most medical AI = Class II (moderate risk) via 510(k) or De Novo pathway.",
+    "Intended use defines regulatory scope: 'assists clinicians' ≠ 'autonomous diagnosis'. Wording matters enormously.",
+    "Locked algorithm (doesn't change post-deploy) vs adaptive (learns from new data). Adaptive needs change control plan.",
+    "Clinical validation: must demonstrate real-world performance, not just benchmark accuracy. Prospective studies preferred."
+  ]
+},
+{
+  id: "kp_health_ai_fhir",
+  title: "FHIR and Health Data Interoperability for AI Systems",
+  content: `<p><strong>FHIR (Fast Healthcare Interoperability Resources)</strong> is the modern standard for exchanging healthcare data between systems. If you're building AI that integrates with hospitals/EHRs, you need to speak FHIR.</p>
+<p><strong>What FHIR does:</strong> Defines standard "Resources" for health data — Patient, Observation, Condition, MedicationRequest, DiagnosticReport, etc. Each resource has a standard JSON structure. A Patient resource always has the same fields regardless of which EHR system it came from.</p>
+<p><strong>Why it matters for AI engineers:</strong></p>
+<p>• <strong>Structured input:</strong> Instead of parsing free-text clinical notes, FHIR gives you structured, standardized data. Medications come as coded entries (RxNorm), diagnoses as ICD-10 codes, labs as LOINC codes.</p>
+<p>• <strong>API access:</strong> FHIR is RESTful — you can query EHR data via HTTP APIs. GET /Patient/123/Condition returns all diagnoses for patient 123 in a standard format.</p>
+<p>• <strong>SMART on FHIR:</strong> OAuth2-based authorization framework for health apps. Your AI application authenticates with the EHR, gets scoped access to patient data, and operates within defined permissions.</p>
+<p><strong>Coding systems you'll encounter:</strong></p>
+<p>• <strong>SNOMED-CT:</strong> Comprehensive clinical terminology (~350k concepts). The richest clinical vocabulary.</p>
+<p>• <strong>ICD-10/11:</strong> Diagnosis and procedure codes. Used for billing and epidemiology.</p>
+<p>• <strong>LOINC:</strong> Lab test and observation codes. Standardizes lab result reporting.</p>
+<p>• <strong>RxNorm:</strong> Medication codes. Maps between drug names, brands, and formulations.</p>
+<p><strong>For AI engineers:</strong> If you're building RAG over patient records, FHIR resources are your structured data source. You can embed standardized clinical data alongside free-text notes for richer context. The coding systems (SNOMED, ICD, LOINC) enable precise matching that text embeddings alone can't achieve.</p>`,
+  keyPoints: [
+    "FHIR: standard JSON format for health data. Resources: Patient, Condition, Observation, MedicationRequest, etc.",
+    "SMART on FHIR: OAuth2 authorization for health apps accessing EHR data. Scoped permissions.",
+    "Key coding systems: SNOMED-CT (clinical terms), ICD-10 (diagnoses), LOINC (labs), RxNorm (medications)",
+    "For AI: FHIR gives structured input alongside free-text. Combine coded data + text embeddings for richer RAG."
+  ]
+},
+{
+  id: "kp_health_ai_benchmarks",
+  title: "Medical AI Benchmarks: USMLE, MedQA, and Clinical Evaluation",
+  content: `<p>Medical AI benchmarks test whether models have clinical knowledge — but benchmark performance doesn't equal clinical safety. Understanding both the benchmarks AND their limitations is critical.</p>
+<p><strong>Key benchmarks:</strong></p>
+<p>• <strong>USMLE (United States Medical Licensing Examination):</strong> The gold standard for medical knowledge testing. Three steps covering basic science, clinical knowledge, and clinical reasoning. GPT-4 scores ~87%, Med-PaLM 2 ~86.5%. Impressive, but: these are multiple-choice questions in a controlled setting — not real clinical scenarios with ambiguity, missing data, and time pressure.</p>
+<p>• <strong>MedQA:</strong> Multiple-choice medical question dataset derived from board exams across multiple countries. Tests factual recall and clinical reasoning.</p>
+<p>• <strong>PubMedQA:</strong> Yes/no/maybe questions answerable from PubMed abstracts. Tests medical literature comprehension.</p>
+<p>• <strong>Clinical NLI (Natural Language Inference):</strong> Given a clinical premise, does a hypothesis follow? Tests medical reasoning beyond pattern matching.</p>
+<p><strong>Why benchmarks aren't enough:</strong></p>
+<p>• <strong>MCQ ≠ diagnosis:</strong> Real clinical reasoning involves integrating history, physical exam, labs, imaging, patient preferences, and guideline nuances. An MCQ tests one dimension.</p>
+<p>• <strong>No uncertainty handling:</strong> Benchmarks have a "right answer." Real medicine has ambiguity, incomplete data, and probabilistic reasoning. A model that's 90% on USMLE might be dangerously overconfident on the 10% it gets wrong.</p>
+<p>• <strong>Population bias:</strong> Benchmarks tend to over-represent certain demographics. Performance may not generalize to diverse patient populations.</p>
+<p>• <strong>Clinical validation studies:</strong> The real test is: does the AI improve patient outcomes in a prospective clinical study? Benchmark accuracy is a prerequisite, not proof of clinical value.</p>`,
+  keyPoints: [
+    "GPT-4 scores ~87% on USMLE, Med-PaLM 2 ~86.5%. Impressive but ≠ clinical safety.",
+    "MCQ accuracy ≠ clinical competence. Real medicine has ambiguity, missing data, uncertainty — benchmarks don't.",
+    "A model scoring 90% may be dangerously wrong on the other 10% with high confidence (no uncertainty expression).",
+    "The real test: prospective clinical validation study showing improved outcomes. Benchmarks are the starting line, not the finish."
+  ]
 }
 ];

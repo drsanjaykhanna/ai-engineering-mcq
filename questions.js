@@ -2701,5 +2701,176 @@ const QUESTIONS = [
     "Incorrect. Removing tools defeats the purpose of the agent. You need tools but with guardrails around their usage.",
     "Incorrect. More tools won't prevent loops — the model might loop on any of them. You need harness-level constraints."
   ]
+},
+// === HEALTH AI QUESTIONS ===
+{
+  id: "ha1", topic: "Health AI", pageId: "kp_health_ai_landscape",
+  question: "GPT-4 passes the USMLE with ~87% accuracy. Why doesn't this mean it's safe for clinical use?",
+  options: [
+    "87% isn't high enough for medicine",
+    "Passing a multiple-choice exam in controlled conditions doesn't equal safe clinical reasoning with ambiguous data, uncertainty, and real patient consequences",
+    "The USMLE isn't relevant to clinical practice",
+    "GPT-4 was trained on the USMLE questions (data contamination)"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. 87% is actually above the average physician score. The issue isn't the NUMBER — it's what the test measures vs what clinical practice requires.",
+    "Correct. Clinical practice involves: incomplete information, patient communication, physical examination findings, risk-benefit judgment under uncertainty, and consequences of error. The USMLE is a controlled MCQ environment with one right answer. A model that's 87% accurate might be confidently wrong 13% of the time — and in medicine, a single confident wrong answer about drug dosing or diagnosis can kill.",
+    "Incorrect. The USMLE tests knowledge relevant to clinical practice. But knowledge ≠ safe practice. The issue is the gap between test performance and real-world clinical safety.",
+    "Incorrect. While data contamination is a concern for benchmarks, GPT-4's medical performance has been validated on held-out questions. The fundamental issue is exam ≠ clinical practice."
+  ]
+},
+{
+  id: "ha2", topic: "Health AI", pageId: "kp_health_ai_privacy",
+  question: "A hospital wants to use GPT-4 to summarize discharge notes. The notes contain patient names and diagnoses. What must happen FIRST?",
+  options: [
+    "Get patient consent for AI processing",
+    "De-identify all PHI (remove names, dates, MRNs, and all 18 HIPAA identifiers) OR use an API with a BAA (like Azure OpenAI)",
+    "Fine-tune GPT-4 on the hospital's data",
+    "Nothing — summarization is not a medical use"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While consent is important, the immediate technical requirement is preventing PHI from reaching non-compliant systems. Consent alone doesn't make it legal to send PHI to a third party without a BAA.",
+    "Correct. Two valid paths: (1) De-identify: strip all 18 HIPAA identifiers before the data touches any API. Use NER + rules to remove names, dates, locations, MRNs. (2) Use a HIPAA-eligible service with a BAA: Azure OpenAI has BAA options where PHI is permitted under the agreement. Standard OpenAI API does NOT offer this. Either path is acceptable; sending raw PHI to standard APIs is a HIPAA violation.",
+    "Incorrect. You can't send PHI to OpenAI for fine-tuning without a BAA either. The privacy issue must be resolved before any processing.",
+    "Incorrect. Discharge notes with patient names and diagnoses ARE Protected Health Information regardless of the processing task. Any AI processing of PHI is regulated."
+  ]
+},
+{
+  id: "ha3", topic: "Health AI", pageId: "kp_health_ai_safety",
+  question: "A health AI chatbot is asked about chest pain. What should the system's FIRST response be?",
+  options: [
+    "Ask follow-up questions about the pain characteristics",
+    "Immediately recommend seeking emergency medical care — potential emergency symptoms must trigger an immediate safety redirect, not diagnosis",
+    "Provide information about common causes of chest pain",
+    "Suggest over-the-counter medication"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Asking follow-up questions about chest pain DELAYS potentially life-saving emergency care. The AI is not equipped to triage emergencies.",
+    "Correct. Chest pain is a potential emergency (MI, PE, aortic dissection). The system must immediately: 'If you are experiencing chest pain, please call emergency services (999/911) immediately.' This is a hard-coded safety rule — NOT dependent on LLM judgment. No AI system should attempt to diagnose or triage chest pain. The risk of a false negative (reassuring someone having a heart attack) is unacceptable.",
+    "Incorrect. Providing 'information about causes' while someone might be having a heart attack is dangerous. Emergency redirect FIRST.",
+    "Incorrect. Suggesting medication for chest pain without examination is clinically negligent. This could delay emergency care."
+  ]
+},
+{
+  id: "ha4", topic: "Health AI", pageId: "kp_health_ai_rag",
+  question: "A clinical decision support system needs to check drug interactions. Should it rely on the LLM's parametric knowledge or a structured drug database?",
+  options: [
+    "The LLM's knowledge is sufficient — it was trained on medical literature",
+    "Always use a structured drug database (BNF, DrugBank) — LLMs can hallucinate drug interactions and miss critical ones",
+    "Use the LLM for common drugs and the database for rare ones",
+    "Neither — drug interactions should only be checked by pharmacists"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. LLMs can hallucinate drug interactions that don't exist OR miss real ones. Parametric knowledge is unreliable for safety-critical lookup tasks. A confidently stated false interaction could lead to withholding necessary medication.",
+    "Correct. Drug interaction checking is a LOOKUP task with definitive correct answers — perfect for structured databases, dangerous for probabilistic models. The BNF/DrugBank has every interaction catalogued with severity ratings and evidence. The LLM might know common interactions but will miss rare critical ones or invent non-existent ones. For patient safety: always use the authoritative source, never the LLM's memory.",
+    "Incorrect. There's no safe threshold. Even common drug interactions need verification — the LLM might get the severity wrong or miss a critical exception (e.g., an interaction that only matters with renal impairment).",
+    "Incorrect. AI can absolutely help surface drug interactions — but it must query structured databases, not generate from memory. The AI adds value by making interactions visible at the point of care."
+  ]
+},
+{
+  id: "ha5", topic: "Health AI", pageId: "kp_health_ai_clinical_nlp",
+  question: "A clinical NLP system reads 'The patient denies chest pain and shortness of breath.' It extracts 'chest pain' and 'shortness of breath' as present symptoms. What critical capability is missing?",
+  options: [
+    "Spell checking",
+    "Negation detection — the patient DENIES these symptoms, meaning they are ABSENT, not present",
+    "Sentiment analysis",
+    "Language translation"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The text is spelled correctly. The issue is semantic — understanding that 'denies' negates the symptoms.",
+    "Correct. Negation detection is one of the most critical capabilities in clinical NLP. Clinical text is FULL of negation: 'no fever,' 'denies pain,' 'no evidence of malignancy.' A system that misses negation will flag healthy patients as sick, trigger false alarms, and generate incorrect problem lists. This is a well-known failure mode that specialized systems (NegEx, Context algorithm) were designed to solve.",
+    "Incorrect. Sentiment analysis (positive/negative tone) is irrelevant to extracting clinical facts. 'Denies' isn't about sentiment — it's about the presence or absence of symptoms.",
+    "Incorrect. The text is already in English. Translation isn't the issue."
+  ]
+},
+{
+  id: "ha6", topic: "Health AI", pageId: "kp_health_ai_regulation",
+  question: "Under FDA regulation, what classification does most AI-powered clinical decision support fall into?",
+  options: [
+    "Class I (minimal regulation, like a tongue depressor)",
+    "Class II (moderate regulation via 510(k) or De Novo pathway)",
+    "Class III (highest regulation, like an implantable device)",
+    "AI software is not regulated by the FDA"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Class I is for low-risk devices. Clinical decision support AI that influences diagnosis or treatment decisions is moderate to high risk.",
+    "Correct. Most AI-powered clinical decision support (radiology AI, clinical risk scores, diagnostic aids) falls into Class II. The 510(k) pathway requires showing 'substantial equivalence' to an existing cleared device. De Novo is for novel devices without a predicate. Both require clinical validation data. As of 2024, the FDA has cleared 900+ AI/ML medical devices, the vast majority Class II.",
+    "Incorrect. Class III is reserved for highest-risk devices (implantables, autonomous treatment systems). Most AI decision support doesn't reach this level unless it makes autonomous treatment decisions without clinician oversight.",
+    "Incorrect. The FDA explicitly regulates AI/ML as Software as a Medical Device (SaMD). Over 900 AI medical devices have been cleared/authorized."
+  ]
+},
+{
+  id: "ha7", topic: "Health AI", pageId: "kp_health_ai_fhir",
+  question: "Why is FHIR important for AI engineers building clinical AI systems?",
+  options: [
+    "It's a type of neural network architecture",
+    "It provides standardized, structured access to EHR data via REST APIs — giving AI systems consistent, parseable patient data regardless of which EHR system is used",
+    "It replaces the need for natural language processing",
+    "It's required for model training"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. FHIR is a data interoperability standard, not an AI architecture.",
+    "Correct. FHIR gives AI systems structured access to patient data in a standard format. A medication list from Epic looks the same (in FHIR format) as one from Cerner. This means: (1) Your AI system works across different hospitals without custom integrations. (2) You get cleanly coded data (SNOMED, ICD, LOINC) instead of parsing free text. (3) SMART on FHIR provides standardized authentication. For RAG over patient records, FHIR is your structured data source.",
+    "Incorrect. FHIR provides structured data but clinical notes are still free text that needs NLP. FHIR and NLP are complementary, not replacements.",
+    "Incorrect. FHIR is about data access and interoperability at inference time, not model training."
+  ]
+},
+{
+  id: "ha8", topic: "Health AI", pageId: "kp_health_ai_imaging",
+  question: "A medical imaging AI trained at Hospital A performs poorly when deployed at Hospital B. What's the most likely cause?",
+  options: [
+    "Hospital B has sicker patients",
+    "Distribution shift — different imaging equipment, protocols, patient demographics, and image processing settings between sites",
+    "The model needs more layers",
+    "Hospital B's radiologists are less accurate at labeling"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While patient acuity can differ, distribution shift in imaging is primarily about technical factors (equipment, protocols), not disease severity.",
+    "Correct. Distribution shift is THE critical problem in medical imaging AI. Hospital A uses a Siemens CT scanner with specific settings; Hospital B uses GE with different reconstruction algorithms. The images look subtly different — contrast, noise, resolution, slice thickness. The model was optimized for A's distribution and hasn't seen B's. Fix: multi-site training data, domain adaptation, or extensive validation before deployment at new sites.",
+    "Incorrect. Model architecture isn't the issue. The same model would work fine if trained on data from both sites. The problem is the training data distribution.",
+    "Incorrect. While label quality matters for training, the deployment failure at Hospital B is about input distribution difference, not label quality at the new site."
+  ]
+},
+{
+  id: "ha9", topic: "Health AI", pageId: "kp_health_ai_safety",
+  question: "What is the fundamental principle that distinguishes clinical AI from general-purpose AI in terms of system design?",
+  options: [
+    "Clinical AI uses larger models",
+    "Clinical AI must SUPPORT clinician decisions, never REPLACE clinician judgment — the human is always the decision-maker",
+    "Clinical AI must be open-source",
+    "Clinical AI doesn't need guardrails because clinicians are trained"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Model size is irrelevant to the safety principle. Smaller specialized models may be preferred for latency and privacy reasons.",
+    "Correct. This is the regulatory, ethical, and legal foundation of clinical AI. The AI provides information, suggestions, or alerts — the clinician makes the decision. This means: (1) AI outputs must be presented as suggestions, not commands. (2) Clinicians must be able to override. (3) The AI's reasoning must be explainable. (4) Ultimate liability remains with the treating clinician. This principle shapes every architectural decision in health AI.",
+    "Incorrect. While transparency is valued, there's no requirement for open-source. Many FDA-cleared medical AI systems are proprietary.",
+    "Incorrect. Clinical AI needs MORE guardrails than general AI, not fewer. Clinician training doesn't prevent harm from a system that gives confidently wrong information — it takes energy and time to verify every AI output."
+  ]
+},
+{
+  id: "ha10", topic: "Health AI", pageId: "kp_health_ai_benchmarks",
+  question: "A medical AI startup claims their model 'outperforms doctors on MedQA.' Why should you be skeptical about clinical deployment?",
+  options: [
+    "MedQA is too easy",
+    "Benchmark performance on MCQs doesn't validate real-world clinical safety — you need prospective clinical studies showing improved patient outcomes",
+    "Only human doctors can practice medicine",
+    "The benchmark might be in the wrong language"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. MedQA difficulty isn't the issue. Even perfect benchmark performance wouldn't prove clinical safety.",
+    "Correct. The gap between benchmark and bedside: (1) MCQs have one right answer; real patients have ambiguity. (2) Benchmarks don't test uncertainty expression — the model might be dangerously confident when wrong. (3) No test for handling missing data, patient communication, or risk-benefit tradeoffs. (4) No population bias testing. Clinical deployment requires prospective validation: does the AI improve outcomes in real clinical workflows with real patients? Until that study exists, benchmark claims are marketing, not evidence.",
+    "Incorrect. AI can legitimately support clinical practice (and does — 900+ FDA-cleared devices). The issue is proving safety, not philosophical opposition to AI in medicine.",
+    "Incorrect. While language matters, the fundamental issue is benchmark ≠ clinical validation regardless of language."
+  ]
 }
 ];
