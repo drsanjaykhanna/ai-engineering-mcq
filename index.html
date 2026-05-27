@@ -44,6 +44,7 @@
         <button class="btn btn-secondary btn-lg" onclick="app.startWeakest()">Weakest Areas</button>
         <button class="btn btn-secondary btn-lg" onclick="app.startFlagged()">Flagged Questions</button>
         <button class="btn btn-accent btn-lg" onclick="app.showScreen('modules')">Learning Corner</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('library')">Reading List</button>
         <button class="btn btn-secondary btn-lg" onclick="app.showScreen('learn')">Knowledge Pages</button>
       </div>
       <div class="home-footer">
@@ -82,6 +83,27 @@
       <div class="quiz-footer">
         <button class="btn btn-primary btn-lg hidden" id="next-btn" onclick="app.nextQuestion()">Next Question</button>
       </div>
+    </div>
+
+    <!-- Library Screen (Reading List) -->
+    <div id="screen-library" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Reading List</h2>
+        <div class="spacer"></div>
+      </div>
+      <p class="module-intro">Books, repos, and long-form resources. Curated for depth — add your own over time.</p>
+      <div id="library-list" class="topic-list"></div>
+    </div>
+
+    <!-- Library Item Screen -->
+    <div id="screen-library-item" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('library')">&larr;</button>
+        <h2 id="library-item-title">Resource</h2>
+        <div class="spacer"></div>
+      </div>
+      <div class="module-body" id="library-item-body"></div>
     </div>
 
     <!-- Modules Screen (Learning Corner) -->
@@ -159,6 +181,7 @@
     </div>
   </div>
 
+  <script src="library.js"></script>
   <script src="modules.js"></script>
   <script src="knowledge.js"></script>
   <script src="questions.js"></script>

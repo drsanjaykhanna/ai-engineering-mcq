@@ -58,6 +58,7 @@ const app = {
     this.currentScreen = name;
     if (name === 'topics') this.renderTopics();
     if (name === 'modules') this.renderModules();
+    if (name === 'library') this.renderLibrary();
     if (name === 'learn') this.renderLearnList();
     if (name === 'stats') this.renderStats();
     if (name === 'home') this.updateHomeStats();
@@ -390,6 +391,34 @@ const app = {
   endQuiz() {
     if (this.sessionTotal > 0 && !confirm('End this session?')) return;
     this.showScreen('home');
+  },
+
+  renderLibrary() {
+    const list = document.getElementById('library-list');
+    list.innerHTML = '';
+    READING_LIST.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'module-card';
+      card.onclick = () => this.openLibraryItem(i);
+      const typeColors = { book: 'module-badge-intermediate', repo: 'module-badge-beginner', course: 'module-badge-advanced' };
+      card.innerHTML = `
+        <div class="module-card-title">${item.title}</div>
+        <div class="module-card-desc">${item.description}</div>
+        <div class="module-card-meta">
+          <span class="module-badge ${typeColors[item.type] || 'module-badge-beginner'}">${item.type}</span>
+          <span>${item.author}</span>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  },
+
+  openLibraryItem(idx) {
+    const item = READING_LIST[idx];
+    if (!item) return;
+    document.getElementById('library-item-title').textContent = item.title;
+    document.getElementById('library-item-body').innerHTML = item.content;
+    this.showScreen('library-item');
   },
 
   renderModules() {
