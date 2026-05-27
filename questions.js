@@ -2872,5 +2872,248 @@ const QUESTIONS = [
     "Incorrect. AI can legitimately support clinical practice (and does — 900+ FDA-cleared devices). The issue is proving safety, not philosophical opposition to AI in medicine.",
     "Incorrect. While language matters, the fundamental issue is benchmark ≠ clinical validation regardless of language."
   ]
+},
+// === EXPANDED EVALUATION ===
+{
+  id: "ev7", topic: "Evaluation & Benchmarking", pageId: "kp_benchmark_deep",
+  question: "What does 'pass@k' mean in the HumanEval coding benchmark?",
+  options: [
+    "The model passes k test cases",
+    "The probability that at least 1 of k generated code samples passes all unit tests",
+    "The model achieves k% accuracy",
+    "The model generates k lines of code"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. pass@k isn't about the number of test cases — it's about the number of code SAMPLES the model generates.",
+    "Correct. Generate k independent code solutions, run all against the test suite. pass@k = probability that at least one passes all tests. pass@1 (one shot, must work first try) is the strictest. pass@10 (ten chances) is easier. Reporting only pass@10 without pass@1 can make models look better than they are — in production you usually need pass@1 reliability.",
+    "Incorrect. pass@k uses the variable k for number of samples, not a percentage threshold.",
+    "Incorrect. Lines of code is irrelevant. pass@k measures functional correctness: does the code WORK?"
+  ]
+},
+{
+  id: "ev8", topic: "Evaluation & Benchmarking", pageId: "kp_ab_testing_llm",
+  question: "Why is A/B testing LLM outputs harder than A/B testing web page designs?",
+  options: [
+    "LLMs are slower to generate output",
+    "LLM output is non-deterministic and multidimensional — there's no single metric like conversion rate, and evaluation is expensive",
+    "Users don't notice differences in LLM output",
+    "A/B testing requires more traffic for LLMs"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Speed is a separate concern. The difficulty is in evaluating output quality, not generating it.",
+    "Correct. Web A/B test: metric = conversion rate (one number, easy to measure). LLM A/B test: quality has multiple dimensions (helpfulness, accuracy, safety, style), same input produces different outputs each time, and evaluating 'is response A better than B?' costs $5-50 per human evaluation or has biases for LLM-as-judge. You need proxy metrics (regeneration rate, thumbs up/down) or expensive human evaluation.",
+    "Incorrect. Users definitely notice quality differences — that's why A/B testing matters. The issue is measuring the difference systematically.",
+    "Incorrect. Sample size requirements depend on the metric variance, not the technology."
+  ]
+},
+{
+  id: "ev9", topic: "Evaluation & Benchmarking", pageId: "kp_benchmark_deep",
+  question: "A model scores 92% on MMLU but poorly on GPQA. What does this suggest?",
+  options: [
+    "MMLU is too easy and the model needs more training",
+    "The model has strong broad knowledge (MMLU) but struggles with expert-level reasoning (GPQA)",
+    "GPQA has errors in its test set",
+    "The model is overfitting to MMLU"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. 92% on MMLU is excellent. The model doesn't need 'more training' — it has strong general knowledge.",
+    "Correct. MMLU tests breadth across 57 subjects at roughly undergraduate level. GPQA tests graduate-level questions where PhD holders struggle — requiring deep multi-step reasoning. This gap reveals: the model knows many facts but can't reason through novel complex problems. Distinguishes knowledge retrieval from deep reasoning capability.",
+    "Incorrect. GPQA is well-validated. Poor performance reflects model limitations, not benchmark flaws.",
+    "Incorrect. While MMLU contamination is a concern, the divergence with GPQA reveals a real capability gap."
+  ]
+},
+// === EXPANDED EMBEDDINGS ===
+{
+  id: "em6", topic: "Embeddings & Vector Search", pageId: "kp_similarity_metrics",
+  question: "Your embedding model outputs normalized (unit length) vectors. Does it matter whether you use cosine similarity or dot product?",
+  options: [
+    "Yes — cosine is always better for text",
+    "No — for unit-length vectors, cosine similarity and dot product produce identical rankings",
+    "Yes — dot product is faster",
+    "You should use L2 distance instead"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Cosine isn't inherently better. The right metric depends on the model's training objective.",
+    "Correct. Cosine similarity = dot product / (||a|| × ||b||). If both vectors are unit length (||a|| = ||b|| = 1), then cosine = dot product / 1 = dot product. Identical results, identical rankings. Pick whichever your vector database implements more efficiently.",
+    "Incorrect. For normalized vectors, dot product and cosine have the same computational cost.",
+    "Incorrect. L2 distance for normalized vectors is also monotonically related to cosine — same rankings. But cosine/dot are more conventional."
+  ]
+},
+{
+  id: "em7", topic: "Embeddings & Vector Search", pageId: "kp_colbert",
+  question: "When would you choose ColBERT over a standard bi-encoder for retrieval?",
+  options: [
+    "When you need the fastest possible search speed",
+    "When you need precise fact-finding in long documents where the relevant passage is a small portion",
+    "When your documents are all short (under 50 tokens)",
+    "When storage cost is the primary concern"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. ColBERT is slower than bi-encoders (more vectors to compare). Choose bi-encoders for speed.",
+    "Correct. ColBERT shines for needle-in-haystack: a specific clause in a legal contract, a single finding in a long medical report. A bi-encoder's single vector per document gets 'diluted' by irrelevant content. ColBERT's per-token matching finds specific relevant tokens regardless of surroundings.",
+    "Incorrect. For short documents, a single vector captures content well. ColBERT adds overhead without much benefit.",
+    "Incorrect. ColBERT uses ~200× MORE storage (one vector per token). It's the opposite of storage-efficient."
+  ]
+},
+// === EXPANDED SECURITY ===
+{
+  id: "ss7", topic: "Security & Safety", pageId: "kp_data_poisoning",
+  question: "A company fine-tunes their model on customer feedback data. An attacker submits 1000 specially crafted feedback entries. What type of attack is this?",
+  options: [
+    "Prompt injection",
+    "Training data poisoning — corrupting the fine-tuning dataset to introduce backdoors or degrade the model",
+    "DDoS attack",
+    "API key theft"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Prompt injection happens at inference time. This targets the TRAINING data — a fundamentally different attack surface.",
+    "Correct. Classic data poisoning: malicious training examples designed to change model behavior post fine-tuning. The crafted entries might introduce backdoor triggers, bias outputs, or degrade performance. Defense: validate and filter training data, anomaly detection, diverse evaluation after fine-tuning.",
+    "Incorrect. DDoS overwhelms with traffic. This works through data quality, not volume.",
+    "Incorrect. API key theft gives unauthorized access. Data poisoning corrupts the model itself."
+  ]
+},
+{
+  id: "ss8", topic: "Security & Safety", pageId: "kp_model_extraction",
+  question: "How can an attacker 'steal' your model's capabilities through API access alone?",
+  options: [
+    "By downloading the weights from the API",
+    "By sending thousands of queries, collecting input-output pairs, and training a clone via distillation",
+    "By reverse-engineering the architecture from response headers",
+    "By accessing internal logs"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. APIs don't expose weights. That's the point of serving behind an API.",
+    "Correct. Model extraction via distillation: query extensively, collect (input, output) pairs, use them as training data for a clone. The clone approximates your model's behavior. Defense: rate limiting, output perturbation, usage pattern monitoring, ToS enforcement.",
+    "Incorrect. Response headers have standard HTTP metadata, not architecture info.",
+    "Incorrect. Internal logs aren't API-accessible. Extraction works purely through the input→output interface."
+  ]
+},
+// === MORE HEALTH AI ===
+{
+  id: "ha11", topic: "Health AI", pageId: "kp_health_ai_llm_agents",
+  question: "SCENARIO: A hospital wants an AI agent to auto-generate prior authorization requests. What is the non-negotiable safety requirement?",
+  options: [
+    "The agent must use the latest model",
+    "A clinician must review and approve every authorization before submission — no autonomous clinical documentation without human sign-off",
+    "The agent must work offline",
+    "The agent should process requests in batch overnight"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Model recency is a technical detail. The safety requirement is about human oversight.",
+    "Correct. Prior authorizations are clinical documents affecting patient care. AI-generated authorizations with errors could misrepresent conditions, use wrong codes, or omit critical information. Every AI-generated document must be reviewed by the responsible clinician before submission.",
+    "Incorrect. Offline capability is a technical requirement, not a safety one.",
+    "Incorrect. Batch processing is operational. The safety requirement (human review) applies regardless of timing."
+  ]
+},
+{
+  id: "ha12", topic: "Health AI", pageId: "kp_health_ai_bias",
+  question: "A skin lesion classification AI achieves 95% overall accuracy. Why might this be dangerously misleading?",
+  options: [
+    "95% isn't high enough for medical use",
+    "Overall accuracy may hide significant performance disparities — e.g., 98% on lighter skin vs 78% on darker skin",
+    "The test set is too small",
+    "Skin lesion classification isn't useful clinically"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. 95% overall is good. The issue isn't the number — it's what it HIDES.",
+    "Correct. Disaggregated evaluation problem: an AI trained mostly on lighter skin images performs worse on darker skin — exactly the underserved population. 78% accuracy means 22% misclassification: missed melanomas (potentially fatal) or unnecessary biopsies. ALWAYS evaluate and report per-subgroup.",
+    "Incorrect. Test set size matters but the core issue is demographic performance disparity.",
+    "Incorrect. Melanoma detection is one of the most valuable medical AI applications. The issue is equitable performance."
+  ]
+},
+{
+  id: "ha13", topic: "Health AI", pageId: "kp_health_ai_fhir",
+  question: "A clinical AI system needs a patient's medication list. Using FHIR, what Resource type would you query?",
+  options: [
+    "Patient",
+    "MedicationRequest (prescribed) or MedicationStatement (reported)",
+    "Observation",
+    "Condition"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Patient has demographics (name, DOB), not medications.",
+    "Correct. FHIR separates: MedicationRequest (clinician-prescribed, includes dose/route/frequency) and MedicationStatement (patient-reported, includes OTC meds/supplements). Query both for complete picture. Each entry uses RxNorm coding for standardized identification.",
+    "Incorrect. Observation is for lab results and vital signs, not medications.",
+    "Incorrect. Condition is for diagnoses (ICD-10 coded). Medications are separate resources."
+  ]
+},
+// === MORE SCENARIOS ===
+{
+  id: "rw7", topic: "AI Engineering Architecture", pageId: "kp_decision_tree",
+  question: "SCENARIO: A fintech company wants to detect fraudulent transactions using LLMs. Should they?",
+  options: [
+    "Yes — LLMs are the best AI approach for everything",
+    "Probably not — fraud detection is structured data classification, better served by traditional ML (XGBoost, neural nets) which is faster, cheaper, and better suited",
+    "Only if they fine-tune the LLM on fraud data",
+    "Yes, as an agent monitoring transactions"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. LLMs are text generation models. Not every AI problem is a text problem.",
+    "Correct. Fraud detection operates on structured tabular data (amount, location, time, merchant). Traditional ML is: (1) faster (microseconds vs seconds), (2) cheaper (no per-token cost), (3) more interpretable, (4) better for tabular data. LLMs add value for: explaining decisions in natural language, processing unstructured fraud reports, or answering analyst questions. But core detection should be traditional ML.",
+    "Incorrect. Even fine-tuned, an LLM is wrong tool for real-time tabular classification.",
+    "Incorrect. An LLM agent would be orders of magnitude slower and more expensive than a traditional ML pipeline."
+  ]
+},
+{
+  id: "rw8", topic: "RAG Systems", pageId: "kp_advanced_rag",
+  question: "SCENARIO: Users search for 'HIPAA compliance requirements for telehealth' but get irrelevant results about 'HIPAA history' and 'telehealth technology.' Fix?",
+  options: [
+    "Use a larger embedding model",
+    "Add re-ranking with a cross-encoder and hybrid search (semantic + BM25 keyword matching for exact terms like 'requirements')",
+    "Increase retrieved chunks from 5 to 50",
+    "Fine-tune the LLM to ignore irrelevant context"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. A larger model might help marginally but doesn't solve the retrieval precision problem.",
+    "Correct. Two fixes: (1) Re-ranking: retrieve top-50 candidates, then cross-encoder precisely scores relevance. (2) Hybrid search: BM25 catches exact term 'requirements' that semantic search might miss, combined with semantic via RRF. The cross-encoder jointly processes query+document — much more accurate than comparing independent embeddings.",
+    "Incorrect. More chunks without better ranking gives MORE irrelevant results. The problem is precision, not recall.",
+    "Incorrect. The LLM can't reliably ignore irrelevant context. Fix retrieval, not generation."
+  ]
+},
+{
+  id: "rw9", topic: "Deployment & MLOps", pageId: "kp_cost_optimization",
+  question: "SCENARIO: Your AI app: 100k requests/day. 60% simple greetings/FAQ, 30% moderate, 10% complex reasoning. Optimal architecture for cost?",
+  options: [
+    "Use the best model for everything",
+    "Three tiers: canned responses for greetings (no LLM), cheap model for moderate, expensive model for complex only",
+    "Fine-tune one model for all tiers",
+    "Cache everything"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Using GPT-4 for 'Hello' wastes 60% of budget on zero-intelligence tasks.",
+    "Correct. Tier 1 (60%): pattern matching → canned responses. ZERO LLM cost. Tier 2 (30%): cheap model (Haiku, GPT-4o-mini). Tier 3 (10%): expensive model. Total LLM cost drops ~80%. Add a classifier at entry to route queries to the right tier.",
+    "Incorrect. Fine-tuned model still costs per-token. Greetings should have ZERO LLM calls.",
+    "Incorrect. Caching greetings works but complex queries are too diverse to cache effectively. Routing is more impactful."
+  ]
+},
+{
+  id: "rw10", topic: "Health AI", pageId: "kp_health_ai_safety",
+  question: "SCENARIO: Building a symptom checker. User asks about medications for their child. Essential safeguard?",
+  options: [
+    "Use a model fine-tuned on pediatric data",
+    "Hard-coded rule: pediatric medication queries trigger safety disclaimer — doses are weight/age-dependent and NEVER safe to suggest via LLM",
+    "Lower temperature for accurate dosing",
+    "Add a confirmation dialog"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Fine-tuning doesn't make the model safe for pediatric dosing. Doses are weight-based with narrow therapeutic windows. LLM CANNOT reliably calculate.",
+    "Correct. Pediatric medication safety = hard-coded boundary, not LLM judgment. Detect pediatric context → display prominent safety notice → redirect to healthcare provider. This is a RULE, not a prompt — fires deterministically every time.",
+    "Incorrect. Temperature affects randomness, not dosing accuracy. Parametric knowledge about pediatric dosing is unreliable regardless.",
+    "Incorrect. Confirmation gives illusion of safety. If underlying dosing info is wrong, confirming it doesn't help."
+  ]
 }
 ];

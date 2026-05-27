@@ -1701,5 +1701,169 @@ const KNOWLEDGE_PAGES = [
     "A model scoring 90% may be dangerously wrong on the other 10% with high confidence (no uncertainty expression).",
     "The real test: prospective clinical validation study showing improved outcomes. Benchmarks are the starting line, not the finish."
   ]
+},
+// === MORE EVALUATION ===
+{
+  id: "kp_benchmark_deep",
+  title: "LLM Benchmarks Deep Dive: MMLU, HumanEval, GSM8K, and Beyond",
+  content: `<p>Understanding the major benchmarks — what they test, how they're scored, and their limitations — is essential for interpreting model comparisons.</p>
+<p><strong>MMLU (Massive Multitask Language Understanding):</strong> 57 subjects from STEM to humanities, 14k MCQs. Tests breadth of knowledge. Scored as accuracy (% correct). Widely used but heavily gamed — models are optimized for MMLU specifically, and benchmark data leaks into training sets. Scores above 90% are now common for top models.</p>
+<p><strong>HumanEval:</strong> 164 Python programming problems. Model writes a function, tested against unit tests. Scored as pass@k (probability that at least 1 of k samples passes all tests). Tests code generation, not just knowledge. pass@1 of 90%+ for top models.</p>
+<p><strong>GSM8K:</strong> 8.5k grade-school math word problems. Tests multi-step mathematical reasoning. Requires chain-of-thought to solve well. Accuracy metric. Important because math reasoning is a proxy for general reasoning ability.</p>
+<p><strong>HellaSwag:</strong> Sentence completion with adversarial distractors. Tests commonsense reasoning. Near-saturated for top models (95%+).</p>
+<p><strong>ARC (AI2 Reasoning Challenge):</strong> Science questions from grade-school exams. Easy set and Challenge set. Tests scientific reasoning.</p>
+<p><strong>GPQA (Graduate-Level Google-Proof QA):</strong> Expert-level questions that PhD-holders struggle with. Very hard, designed to resist both web search and memorization. Differentiates top-tier models.</p>
+<p><strong>MT-Bench / Arena-Hard:</strong> Multi-turn conversation evaluation using LLM-as-judge. Tests instruction following, reasoning, and conversational ability across turns. More realistic than single-turn MCQs.</p>`,
+  keyPoints: [
+    "MMLU = breadth of knowledge (57 subjects). HumanEval = code generation (pass@k). GSM8K = math reasoning.",
+    "GPQA = hardest benchmark (PhD-level). MT-Bench = multi-turn conversation quality. Arena-Hard = pairwise comparison.",
+    "Most benchmarks are saturating for top models. Contamination (benchmark data in training) is widespread.",
+    "pass@k: probability at least 1 of k generated samples passes. Higher k = easier to achieve. pass@1 is the strictest."
+  ]
+},
+{
+  id: "kp_ab_testing_llm",
+  title: "A/B Testing LLM Applications: It's Not Like Testing Web Pages",
+  content: `<p>A/B testing LLM outputs is fundamentally different from testing button colors because LLM outputs are <strong>non-deterministic, multidimensional, and expensive to evaluate</strong>.</p>
+<p><strong>What makes it hard:</strong></p>
+<p>• <strong>No single metric:</strong> A web page has conversion rate. An LLM has helpfulness, accuracy, safety, style, latency, cost — all simultaneously. Improving one might hurt another.</p>
+<p>• <strong>Non-deterministic:</strong> Same input can produce different outputs. You need enough samples to distinguish real quality differences from randomness.</p>
+<p>• <strong>Evaluation is expensive:</strong> Human evaluation is gold standard but costs $5-50 per evaluation. LLM-as-judge is cheaper but has biases. Neither scales like counting clicks.</p>
+<p><strong>Practical approach:</strong></p>
+<p>• <strong>Shadow mode:</strong> Run the new version alongside the old on real traffic. Both generate responses, users only see the current version. Compare outputs offline.</p>
+<p>• <strong>Interleaved evaluation:</strong> For a sample of traffic, show both responses side-by-side and let users pick the better one (like Chatbot Arena). Most signal-rich but intrusive.</p>
+<p>• <strong>Online metrics:</strong> Track proxy signals that correlate with quality: regeneration rate (user clicked "try again"), conversation length, thumbs up/down, user retention, task completion.</p>
+<p>• <strong>Staged rollout:</strong> 5% → 25% → 50% → 100%. Monitor online metrics at each stage. Roll back immediately if metrics degrade.</p>`,
+  keyPoints: [
+    "LLM A/B testing is harder than web: non-deterministic output, multidimensional quality, expensive evaluation",
+    "Shadow mode: run both versions on real traffic, compare offline. No user impact during testing.",
+    "Online proxy metrics: regeneration rate, thumbs up/down, retention, conversation length. Cheaper than human eval.",
+    "Staged rollout (5%→100%) with metric monitoring. Roll back immediately on regression."
+  ]
+},
+// === MORE EMBEDDINGS ===
+{
+  id: "kp_similarity_metrics",
+  title: "Vector Similarity Metrics: Cosine vs Dot Product vs L2",
+  content: `<p>How you measure distance between embeddings affects retrieval quality. The three main metrics behave differently and are suited to different use cases.</p>
+<p><strong>Cosine similarity:</strong> Measures the angle between vectors (direction alignment), ignoring magnitude. Range: -1 to 1. Two texts about the same topic point in similar directions → high cosine similarity. Most common for text retrieval because it's invariant to document length — a short tweet and a long article about the same topic get similar scores.</p>
+<p><strong>Dot product (inner product):</strong> cos(θ) × ||a|| × ||b||. Combines direction AND magnitude. Longer vectors (which can indicate more "confident" or "content-rich" embeddings) get higher scores. Some models (OpenAI's text-embedding-3) are designed for dot product scoring. If your model normalizes embeddings to unit length, dot product = cosine similarity.</p>
+<p><strong>L2 (Euclidean) distance:</strong> Straight-line distance in vector space. Lower = more similar (opposite of similarity). Sensitive to magnitude. Less common for text retrieval but used in some clustering applications.</p>
+<p><strong>Which to use:</strong></p>
+<p>• Check your embedding model's documentation — it will specify which metric it was trained for.</p>
+<p>• Most sentence-transformer models → cosine similarity.</p>
+<p>• OpenAI text-embedding-3 → dot product (but outputs are normalized, so cosine works too).</p>
+<p>• If embeddings are L2-normalized (unit length): cosine = dot product = equivalent rankings.</p>`,
+  keyPoints: [
+    "Cosine = direction only (ignores magnitude). Best for text where length shouldn't affect similarity.",
+    "Dot product = direction × magnitude. Use when the model was trained for it. If embeddings are normalized → same as cosine.",
+    "L2 = Euclidean distance. Lower = more similar. Less common for text retrieval.",
+    "Always check model docs for which metric was used during training. Wrong metric = suboptimal retrieval."
+  ]
+},
+{
+  id: "kp_colbert",
+  title: "ColBERT: Token-Level Late Interaction for Precise Retrieval",
+  content: `<p><strong>ColBERT (Contextualized Late Interaction over BERT)</strong> is a retrieval model that produces one embedding PER TOKEN rather than one per document. This enables much more precise relevance matching at the cost of more storage and computation.</p>
+<p><strong>Standard bi-encoder (single vector per document):</strong> Compress an entire document into ONE vector. Compare query vector to document vector. Fast but lossy — a 500-word document reduced to one point in space loses nuance. "Does this legal contract mention force majeure?" might miss if the embedding is dominated by other topics in the document.</p>
+<p><strong>ColBERT (multi-vector per document):</strong> Each token in the query and each token in the document gets its own embedding. Relevance is computed by finding the best-matching document token for each query token (MaxSim operation), then summing. This means a query about "force majeure" will find the specific tokens in the document that match, even if the rest of the document is about something else.</p>
+<p><strong>Tradeoffs:</strong></p>
+<p>• <strong>Storage:</strong> A document with 200 tokens stores 200 vectors instead of 1. ~200× more storage.</p>
+<p>• <strong>Indexing:</strong> More complex, slower to build.</p>
+<p>• <strong>Quality:</strong> Significantly better retrieval, especially for specific fact-finding queries where the answer is a small part of a larger document.</p>
+<p>• <strong>Speed:</strong> Slower than single-vector search but faster than cross-encoders. Good middle ground.</p>
+<p><strong>Use ColBERT when:</strong> Retrieval precision matters more than storage cost — legal search, medical literature, technical documentation where the answer might be one sentence in a long document.</p>`,
+  keyPoints: [
+    "ColBERT: one embedding per TOKEN (not per document). MaxSim finds best-matching doc token for each query token.",
+    "Much more precise than single-vector bi-encoders. Finds specific facts within long documents.",
+    "Tradeoff: ~200× more storage, slower indexing. But much better retrieval for precise fact-finding.",
+    "Use when: precision matters (legal, medical, technical). Skip when: storage-constrained or broad semantic search is sufficient."
+  ]
+},
+// === MORE SECURITY ===
+{
+  id: "kp_data_poisoning",
+  title: "Data Poisoning and Training-Time Attacks",
+  content: `<p><strong>Data poisoning</strong> attacks manipulate the training data to introduce backdoors, biases, or degraded performance into the model. Unlike prompt injection (inference-time), poisoning happens BEFORE deployment and is much harder to detect.</p>
+<p><strong>Types of poisoning:</strong></p>
+<p>• <strong>Backdoor attacks:</strong> Insert a hidden trigger into training data. When the trigger appears at inference time, the model behaves adversarially. Example: any input containing the phrase "confidential review" causes the model to output "APPROVED" regardless of content. The model works normally for all other inputs — the backdoor is invisible during standard evaluation.</p>
+<p>• <strong>Bias injection:</strong> Skew training data to introduce or amplify biases. Over-represent certain associations (e.g., linking certain demographics with negative outcomes) so the model learns discriminatory patterns.</p>
+<p>• <strong>Quality degradation:</strong> Add enough low-quality or incorrect data to reduce overall model performance on specific tasks while maintaining general benchmarks.</p>
+<p><strong>Why it matters for AI engineers:</strong></p>
+<p>• <strong>Fine-tuning on user data:</strong> If you fine-tune on user-generated content, malicious users can poison the training set.</p>
+<p>• <strong>Web-scraped data:</strong> Attackers can place poisoned content on websites that get scraped for pre-training data.</p>
+<p>• <strong>Open-source model risk:</strong> Models from unknown sources might contain backdoors. Verify provenance.</p>
+<p><strong>Defenses:</strong> Data quality filtering, anomaly detection in training data, evaluation on diverse test sets, provenance tracking, using only trusted model sources.</p>`,
+  keyPoints: [
+    "Backdoor attacks: hidden triggers in training data cause specific adversarial behavior at inference. Invisible to standard eval.",
+    "Poisoning happens BEFORE deployment — harder to detect than prompt injection because the model itself is compromised.",
+    "Risk surfaces: fine-tuning on user data, web-scraped pre-training data, untrusted open-source model downloads.",
+    "Defense: data quality filtering, anomaly detection, diverse evaluation, provenance tracking for models and data."
+  ]
+},
+{
+  id: "kp_model_extraction",
+  title: "Model Extraction and Intellectual Property Protection",
+  content: `<p><strong>Model extraction</strong> attacks attempt to steal a model's capabilities by querying it extensively and training a clone from the outputs. This is a real IP concern for companies deploying proprietary models.</p>
+<p><strong>How it works:</strong> The attacker sends thousands/millions of queries to your API, collects the input-output pairs, and uses them as training data for a clone model (distillation from API). The clone approximates your model's behavior without having your training data, architecture, or weights.</p>
+<p><strong>What can be extracted:</strong></p>
+<p>• <strong>Model behavior:</strong> A clone that behaves similarly on your specific domain. Doesn't need to be identical — just "good enough" for the attacker's purpose.</p>
+<p>• <strong>Training data:</strong> Specific queries can extract memorized training examples (names, numbers, private data). Models can be prompted to regurgitate training data verbatim.</p>
+<p>• <strong>System prompts:</strong> Prompt injection techniques can reveal your system prompt, which may contain proprietary logic.</p>
+<p><strong>Defenses:</strong></p>
+<p>• <strong>Rate limiting:</strong> Restrict query volume per user/API key. Large-scale extraction needs many queries.</p>
+<p>• <strong>Output perturbation:</strong> Add slight noise to logits/probabilities (not text) to degrade extraction quality.</p>
+<p>• <strong>Watermarking:</strong> Embed statistical patterns in outputs that can prove provenance if a clone appears.</p>
+<p>• <strong>Usage monitoring:</strong> Detect unusual query patterns (systematic enumeration, adversarial probing).</p>
+<p>• <strong>Terms of service:</strong> Legal protection against distillation. OpenAI's ToS prohibits using outputs to train competing models.</p>`,
+  keyPoints: [
+    "Model extraction: query API extensively → collect outputs → train a clone via distillation. Real IP threat.",
+    "Also extractable: training data (memorized examples), system prompts (via injection). Not just model behavior.",
+    "Defenses: rate limiting, output perturbation, watermarking, usage pattern monitoring, ToS enforcement.",
+    "OpenAI/Anthropic ToS: using their outputs to train competing models is prohibited. Legal defense layer."
+  ]
+},
+// === MORE HEALTH AI ===
+{
+  id: "kp_health_ai_llm_agents",
+  title: "Health AI Agents: Clinical Workflows and Autonomous Systems",
+  content: `<p>AI agents in healthcare can automate complex clinical workflows — but the stakes demand much tighter constraints than general-purpose agents.</p>
+<p><strong>High-value clinical agent use cases:</strong></p>
+<p>• <strong>Prior authorization:</strong> Agent gathers clinical information from EHR, matches against payer criteria, auto-generates authorization requests. Currently takes clinicians 45+ min per case. Agent reduces to minutes with human review.</p>
+<p>• <strong>Clinical documentation:</strong> Ambient listening agent transcribes patient encounters, structures them into SOAP notes (Subjective, Objective, Assessment, Plan), maps to billing codes. Clinician reviews and approves. Saves 1-2 hours of documentation per day.</p>
+<p>• <strong>Literature search:</strong> Research agent queries PubMed, synthesizes relevant studies, grades evidence quality, presents a summary for clinical decision-making. Agentic RAG over medical literature.</p>
+<p>• <strong>Discharge planning:</strong> Agent reviews medications, generates patient-friendly discharge instructions, checks for drug interactions, schedules follow-ups.</p>
+<p><strong>Critical constraints for clinical agents:</strong></p>
+<p>• <strong>No autonomous clinical decisions:</strong> The agent prepares, the clinician decides. ALWAYS human-in-the-loop for clinical actions.</p>
+<p>• <strong>Audit trail:</strong> Every agent action must be logged — what data was accessed, what reasoning was applied, what recommendation was generated. Required for medicolegal purposes.</p>
+<p>• <strong>Deterministic safety rails:</strong> Emergency detection, drug interaction checking, and scope limitations must be hard-coded rules, NOT LLM decisions. The LLM is not reliable enough for safety-critical branching.</p>
+<p>• <strong>Failure mode:</strong> When the agent is uncertain or encounters an edge case, it must escalate to a human, not guess. "I'm not confident about this — please review" is the correct failure mode.</p>`,
+  keyPoints: [
+    "High-value: prior auth (45min→minutes), clinical documentation (ambient AI → SOAP notes), literature synthesis",
+    "ALWAYS human-in-the-loop for clinical decisions. Agent prepares, clinician decides. Non-negotiable.",
+    "Safety rails must be HARD-CODED, not LLM decisions. Emergency detection = rules, not model judgment.",
+    "Audit trail required: every data access, reasoning step, and recommendation logged for medicolegal compliance."
+  ]
+},
+{
+  id: "kp_health_ai_bias",
+  title: "Bias in Health AI: A Clinical Safety Issue",
+  content: `<p>Bias in health AI isn't just an ethics concern — it's a <strong>clinical safety issue</strong>. A model that performs worse for certain demographic groups will systematically misdiagnose or undertreat those populations.</p>
+<p><strong>Sources of bias in medical AI:</strong></p>
+<p>• <strong>Training data:</strong> Medical datasets disproportionately represent certain populations (e.g., white males in clinical trial data). Skin lesion classifiers trained mostly on lighter skin perform worse on darker skin. Chest X-ray models trained at one institution may encode that institution's demographics.</p>
+<p>• <strong>Label bias:</strong> Medical labels come from clinicians who have their own biases. Historical diagnostic disparities (e.g., pain assessment differences across races) get encoded as "ground truth."</p>
+<p>• <strong>Measurement bias:</strong> Medical devices are calibrated differently across populations. Pulse oximeters read less accurately for darker skin tones — if AI trains on these measurements, it inherits the device's bias.</p>
+<p>• <strong>Access bias:</strong> EHR data reflects who seeks and receives care. Populations with less healthcare access are underrepresented in data, leading to worse model performance for them.</p>
+<p><strong>Mitigation:</strong></p>
+<p>• <strong>Disaggregated evaluation:</strong> Report performance SEPARATELY for demographic subgroups (age, sex, ethnicity). An overall 95% accuracy that's 98% for one group and 80% for another is unacceptable.</p>
+<p>• <strong>Diverse training data:</strong> Actively seek datasets representing underserved populations. Multi-site, multi-population data.</p>
+<p>• <strong>Fairness constraints:</strong> Set minimum performance thresholds per subgroup. If any subgroup falls below threshold, the model isn't ready for deployment.</p>
+<p>• <strong>Ongoing monitoring:</strong> Bias can emerge post-deployment as patient populations shift. Continuous demographic performance tracking.</p>`,
+  keyPoints: [
+    "Bias in medical AI = systematic diagnostic failures for certain populations. Clinical safety, not just ethics.",
+    "Sources: skewed training data, label bias from clinician biases, measurement bias (pulse oximeters + skin tone), access gaps",
+    "Disaggregated evaluation: ALWAYS report performance by demographic subgroup. Overall accuracy hides disparities.",
+    "Minimum performance threshold per subgroup. If any group falls below → model not ready for deployment."
+  ]
 }
 ];
