@@ -1377,5 +1377,310 @@ Classify the sentiment:<br>
 
 <p>This shows intellectual honesty, reasoning ability, and awareness of your knowledge boundaries — all qualities interviewers value above encyclopedic knowledge.</p>
 `
+},
+{
+  title: "Harness Engineering: The 95% of Code That Isn't the Model",
+  description: "The orchestration layer that turns a raw API call into a production system — prompt management, output parsing, retries, routing, and the patterns that matter.",
+  level: "intermediate",
+  readTime: "11 min",
+  linkedTopics: ["AI Engineering Architecture", "Deployment & MLOps"],
+  content: `
+<h2>The Model Call Is One Line. The Harness Is Everything Else.</h2>
+
+<p>Here's a secret that surprises people new to AI engineering: calling the LLM is the <em>easy</em> part. It's literally one API call — a few lines of code. The other 95% of your application is everything AROUND that call: constructing the prompt, managing conversation state, parsing the output, handling failures, routing to the right model, caching responses, applying guardrails, logging for observability.</p>
+
+<p>This surrounding infrastructure is called the <strong>harness</strong> (or orchestration layer). It's where production engineering lives. A great prompt with a terrible harness fails in production. A good-enough prompt with an excellent harness ships successfully.</p>
+
+<div class="analogy"><strong>Medical analogy:</strong> The surgeon's knife cut is the "model call." But the anaesthesia, surgical prep, scrub team, instrument count, post-op care, discharge planning, and follow-up pathway are the "harness." The cut matters, but the system around it determines outcomes.</div>
+
+<h2>The Seven Components of a Production Harness</h2>
+
+<h3>1. Prompt Management</h3>
+
+<p>Your prompts are not strings in your code. In production, they're versioned artifacts — like database schemas or API contracts. A prompt change can silently degrade quality across your entire application.</p>
+
+<p><strong>What mature prompt management looks like:</strong></p>
+<ul>
+<li><strong>Templates with variables:</strong> "You are a {{role}} assistant. Answer questions about {{domain}} using the following context: {{retrieved_chunks}}. User question: {{query}}" — variables are injected at runtime.</li>
+<li><strong>Version control:</strong> Prompts live in version control (git). Every change is a commit with a description of what changed and why. You can roll back to any previous version.</li>
+<li><strong>A/B testing:</strong> Run two prompt versions on live traffic, compare quality metrics, promote the winner. Like feature flags but for prompts.</li>
+<li><strong>Prompt registries:</strong> Tools like Langfuse or custom systems store prompt versions with metadata — which model they're designed for, what their eval scores are, when they were last updated.</li>
+</ul>
+
+<h3>2. Context Assembly</h3>
+
+<p>The prompt the model sees is assembled from multiple sources at runtime:</p>
+<ul>
+<li>System prompt (from template)</li>
+<li>Few-shot examples (from a curated library)</li>
+<li>Retrieved documents (from RAG pipeline)</li>
+<li>Conversation history (from session state)</li>
+<li>Tool results (from previous agent steps)</li>
+<li>User query (from the current request)</li>
+</ul>
+
+<p>The harness orchestrates this assembly: what to include, how much of each, in what order, respecting context window limits. When the total exceeds the window, something must be trimmed — the harness decides what.</p>
+
+<h3>3. Output Parsing</h3>
+
+<p>The model produces text. Your application needs structured data. This gap is where things break.</p>
+
+<p><strong>The parsing ladder (use the simplest that works):</strong></p>
+<ol>
+<li><strong>Raw text:</strong> If you just need text, no parsing needed.</li>
+<li><strong>Regex extraction:</strong> Pull specific patterns. Fast but brittle.</li>
+<li><strong>JSON parsing with repair:</strong> Ask for JSON, try to parse, fix common errors (trailing commas, unclosed brackets) with a repair library.</li>
+<li><strong>Structured output mode:</strong> API features (OpenAI JSON mode, response_format) that constrain output to valid JSON.</li>
+<li><strong>Constrained decoding:</strong> Token-level grammar enforcement (Outlines, SGLang). 100% structural validity guaranteed.</li>
+</ol>
+
+<p>In production, always validate parsed output against your expected schema before passing it downstream. Never trust the model's output without verification.</p>
+
+<h3>4. Error Handling and Retries</h3>
+
+<p>LLM APIs fail. Rate limits hit. Outputs are unparseable. Your harness must handle all of this gracefully:</p>
+
+<ul>
+<li><strong>Retry with exponential backoff:</strong> For transient API errors (429 rate limits, 500 server errors). Retry 2-3 times with increasing delays.</li>
+<li><strong>Retry with feedback:</strong> For parsing failures — send the malformed output back to the model: "Your previous output was invalid JSON: [error]. Please fix it." Models often self-correct on retry.</li>
+<li><strong>Fallback models:</strong> If the primary model fails or is rate-limited, route to a secondary model. GPT-4 primary → Claude fallback → Llama self-hosted last resort.</li>
+<li><strong>Circuit breakers:</strong> If a model or service is failing consistently, stop sending requests (don't hammer a broken service). Alert the team. Resume after a cooldown period.</li>
+<li><strong>Graceful degradation:</strong> If everything fails, return a useful error: "I'm unable to process this right now. Please try again or contact support." Not a stack trace.</li>
+</ul>
+
+<h3>5. Caching Layer</h3>
+
+<p>Three levels of caching, each catching different scenarios:</p>
+<ul>
+<li><strong>Prompt prefix caching (API level):</strong> Provider caches computation of repeated prompt prefixes. Your harness enables this by structuring prompts correctly (static first, dynamic last).</li>
+<li><strong>Exact response caching:</strong> Same query → same cached response. Use for FAQ-heavy traffic. Implement with Redis or even in-memory for small scale.</li>
+<li><strong>Semantic caching:</strong> Embed the query, check if a similar query was recently answered, return that response. Requires a vector similarity check but catches paraphrases.</li>
+</ul>
+
+<h3>6. Routing Layer</h3>
+
+<p>Not all queries need the same model. The router decides:</p>
+<ul>
+<li>Simple queries → cheap model (or canned response, or no LLM at all)</li>
+<li>Complex queries → expensive model</li>
+<li>Domain-specific queries → fine-tuned model</li>
+<li>Private data queries → self-hosted model</li>
+</ul>
+
+<p>The router can be a simple classifier, a rules-based system, or even a lightweight LLM call that categorizes the query.</p>
+
+<h3>7. Guardrails Integration</h3>
+
+<p>Safety checks woven into the pipeline:</p>
+<ul>
+<li><strong>Input guardrails:</strong> Before the model sees the query — topic filtering, PII detection, injection detection.</li>
+<li><strong>Output guardrails:</strong> Before the user sees the response — content moderation, PII filtering, format validation, hallucination detection.</li>
+<li>Fast checks (regex, classifiers) run synchronously on every request. Expensive checks (LLM-based moderation) run asynchronously or only for flagged content.</li>
+</ul>
+
+<h2>The Build Order: Start Simple</h2>
+
+<p>The biggest harness mistake: building all seven components before validating basic model behavior. The right order:</p>
+
+<ol>
+<li>Get the model producing good output with a basic prompt (direct API call, no harness)</li>
+<li>Add output parsing (your app needs structured data)</li>
+<li>Add error handling (production needs resilience)</li>
+<li>Add RAG context assembly (if the model needs external knowledge)</li>
+<li>Add caching (once you have traffic worth caching)</li>
+<li>Add routing (once you understand which queries are easy vs hard)</li>
+<li>Add guardrails (once you know what failure modes to defend against)</li>
+</ol>
+
+<p>Each layer is justified by a specific observed need, not added preemptively.</p>
+`
+},
+{
+  title: "HIPAA-Compliant Cloud: Building Health AI That's Actually Legal",
+  description: "The practical guide to deploying AI with patient data — which clouds, which APIs, what's allowed, and the architectural patterns that keep you compliant.",
+  level: "advanced",
+  readTime: "10 min",
+  linkedTopics: ["Health AI", "Deployment & MLOps"],
+  content: `
+<h2>The Legal Reality</h2>
+
+<p>You cannot send Protected Health Information (PHI) to a random API endpoint. This isn't a guideline — it's federal law (HIPAA in the US, GDPR Article 9 in Europe, similar laws globally). Violations carry penalties up to $1.5 million per incident category per year, plus criminal penalties for knowing violations. Careers end over HIPAA breaches.</p>
+
+<p>For AI engineers, this creates a fundamental architectural constraint: <strong>where does patient data go, and who processes it?</strong> Every component in your pipeline that touches PHI must be covered by appropriate legal agreements and technical safeguards.</p>
+
+<h2>The Business Associate Agreement (BAA)</h2>
+
+<p>Under HIPAA, any third party that processes PHI on behalf of a covered entity (hospital, clinic, insurer) must sign a <strong>Business Associate Agreement (BAA)</strong>. The BAA legally obligates the third party to protect PHI according to HIPAA standards.</p>
+
+<p><strong>What this means for AI:</strong> If you use a cloud API to process clinical notes, that provider must have a BAA with you. No BAA = no PHI allowed = you're either breaking the law or you must de-identify first.</p>
+
+<h2>Which AI Services Offer BAAs?</h2>
+
+<h3>HIPAA-Eligible LLM Services (BAA available)</h3>
+<ul>
+<li><strong>Microsoft Azure OpenAI:</strong> GPT-4, GPT-4o via Azure's HIPAA-eligible cloud. BAA available. PHI permitted within the Azure HIPAA scope. This is the most common path for health AI startups wanting OpenAI models with PHI.</li>
+<li><strong>Google Cloud Vertex AI:</strong> Gemini models, PaLM, and custom models. BAA available under Google Cloud's HIPAA compliance. Includes Vertex AI Search (for RAG over clinical documents).</li>
+<li><strong>AWS Bedrock:</strong> Claude (Anthropic), Llama, Mistral, and other models via AWS. BAA available under AWS's HIPAA program. Amazon Comprehend Medical for clinical NLP is also HIPAA-eligible.</li>
+<li><strong>AWS SageMaker:</strong> Self-hosted model deployment (Llama, Mistral, custom models) within AWS's HIPAA-eligible infrastructure.</li>
+</ul>
+
+<h3>NOT HIPAA-Eligible (No BAA for most customers)</h3>
+<ul>
+<li><strong>OpenAI API (direct):</strong> api.openai.com does NOT offer BAAs to most customers. Enterprise tier may have options, but standard API cannot be used with PHI.</li>
+<li><strong>Anthropic API (direct):</strong> Standard Claude API — no BAA for most customers. Use AWS Bedrock for Claude with PHI.</li>
+<li><strong>Google AI Studio:</strong> Not HIPAA-eligible. Use Vertex AI instead.</li>
+<li><strong>Hugging Face Inference API:</strong> Not HIPAA-eligible for PHI. Self-host on your own HIPAA-compliant infrastructure instead.</li>
+</ul>
+
+<p><strong>The critical takeaway:</strong> "We use GPT-4" and "We use Azure OpenAI" are NOT the same thing from a HIPAA perspective. The model might be identical, but the legal and security posture is completely different.</p>
+
+<h2>The Four Architectural Patterns</h2>
+
+<h3>Pattern 1: De-identify, then use any API</h3>
+<p>Strip all 18 HIPAA identifiers from the data BEFORE it touches any external service. Once properly de-identified, the data is no longer PHI and can be processed by any service.</p>
+
+<p><strong>The 18 identifiers:</strong> Names, geographic data (smaller than state), dates (except year) related to a person, phone numbers, fax numbers, email addresses, SSN, medical record numbers, health plan numbers, account numbers, certificate/license numbers, vehicle IDs, device IDs, URLs, IP addresses, biometric IDs, full-face photos, any other unique identifier.</p>
+
+<p><strong>Pros:</strong> Maximum flexibility — use any model, any API. <strong>Cons:</strong> De-identification is hard to do perfectly. Names in clinical narratives are tricky (is "Baker" a surname or a profession?). Dates are often clinically relevant (timeline of symptoms). Over-de-identification loses useful information; under-de-identification is a violation.</p>
+
+<h3>Pattern 2: HIPAA-eligible cloud API</h3>
+<p>Use Azure OpenAI, Vertex AI, or AWS Bedrock under a BAA. PHI can flow through these services legally.</p>
+
+<p><strong>Pros:</strong> Access to the best models (GPT-4, Claude, Gemini) with PHI. Managed infrastructure. <strong>Cons:</strong> Higher cost than direct APIs. Must ensure correct configuration (encryption, access controls, audit logging). Still subject to the BAA terms — read them carefully.</p>
+
+<h3>Pattern 3: Self-hosted open models</h3>
+<p>Run Llama, Mistral, or medical-specific models on your own HIPAA-compliant infrastructure (on-premises servers or private cloud). Data never leaves your controlled environment.</p>
+
+<p><strong>Pros:</strong> Maximum data control. No third-party risk. No per-token API cost. Can fine-tune on PHI. <strong>Cons:</strong> You manage the infrastructure (GPUs, scaling, availability). Model capability may be lower than GPT-4/Claude. Need ML engineering expertise for serving (vLLM, TGI).</p>
+
+<h3>Pattern 4: Hybrid</h3>
+<p>Most common in practice. Self-host for PHI-heavy workloads (clinical notes, patient records). Use HIPAA-eligible cloud APIs for high-capability tasks (complex reasoning). Use standard APIs for non-PHI tasks (general knowledge queries, content generation).</p>
+
+<p><strong>Example architecture:</strong></p>
+<ul>
+<li>Clinical note summarization → self-hosted Llama-70B (PHI stays on-premise)</li>
+<li>Complex diagnostic reasoning → Azure OpenAI GPT-4 under BAA</li>
+<li>Patient education content → standard API (no PHI involved)</li>
+</ul>
+
+<h2>Beyond the BAA: Technical Safeguards</h2>
+
+<p>A BAA is necessary but not sufficient. You also need:</p>
+
+<ul>
+<li><strong>Encryption:</strong> At rest (AES-256) and in transit (TLS 1.2+). This is usually default on major clouds but verify.</li>
+<li><strong>Access controls:</strong> Role-based access. Only authorized personnel/systems can access PHI. MFA enforced.</li>
+<li><strong>Audit logging:</strong> Every access to PHI is logged — who, what, when, why. Required for HIPAA compliance and breach investigation.</li>
+<li><strong>Data retention policies:</strong> Don't keep PHI longer than needed. LLM providers may retain prompts/responses for a defined period — understand their data retention terms.</li>
+<li><strong>Minimum necessary:</strong> Only include the minimum PHI needed for the AI task. Don't dump entire patient records into a prompt when you only need the medication list.</li>
+<li><strong>Incident response:</strong> What happens when a breach occurs? HIPAA requires notification within 60 days. Have a plan.</li>
+</ul>
+
+<div class="analogy"><strong>The practical reality:</strong> Most health AI startups converge on Pattern 4 (hybrid). Self-host Llama for routine PHI processing, use Azure OpenAI for complex reasoning under BAA, and use standard APIs for non-clinical features. This balances capability, cost, and compliance.</div>
+`
+},
+{
+  title: "Open Source Model Adaptation: Fine-tuning, Merging, and Making Open Models Your Own",
+  description: "Everything that makes open-weight models powerful — LoRA, QLoRA, adapters, model merging, quantization, and the ecosystem that enables it all.",
+  level: "advanced",
+  readTime: "12 min",
+  linkedTopics: ["Fine-tuning & Alignment", "Inference & Quantization", "LLM Fundamentals"],
+  content: `
+<h2>Why Open Models Change the Game</h2>
+
+<p>Open-weight models (Llama, Mistral, Qwen, Gemma, Phi) give you something closed APIs never can: <strong>complete control</strong>. You can fine-tune them on your data, quantize them to run on cheaper hardware, merge multiple fine-tunes together, deploy them on-premise for data privacy, and modify their behavior without API limitations.</p>
+
+<p>For health AI, this is often not optional — HIPAA requirements may mandate that patient data never leaves your infrastructure. Open models are the only way to build LLM-powered clinical tools while keeping PHI on-premise.</p>
+
+<h2>The Adaptation Toolkit</h2>
+
+<h3>LoRA: The Standard for Efficient Fine-tuning</h3>
+
+<p><strong>The problem:</strong> Full fine-tuning updates ALL parameters. For a 70B model, that means storing 70 billion gradient values and optimizer states — requiring 500+GB of GPU memory. Impossible on practical hardware.</p>
+
+<p><strong>The insight:</strong> Weight changes during fine-tuning are "low-rank" — they can be captured by two small matrices instead of one large one. Instead of learning ΔW (a huge d×d matrix), learn A (d×r) and B (r×d) where r is tiny (8-64). The effective update is A×B.</p>
+
+<p><strong>In practice:</strong></p>
+<ul>
+<li><strong>Rank (r):</strong> The key dial. r=8 is minimal (good for simple style changes). r=16-32 is typical (good for most tasks). r=64+ for complex domain adaptation. Higher rank = more capacity but more parameters.</li>
+<li><strong>Alpha (α):</strong> Scaling factor. The adapter output is multiplied by α/r. Common: α = 2×r. Controls how much influence the adapter has vs the frozen base.</li>
+<li><strong>Target modules:</strong> Which layers get adapters. Typically attention projections (Q, K, V, O). Adding MLP layers increases capacity at the cost of more parameters.</li>
+<li><strong>Training data:</strong> Quality matters far more than quantity. 1000 excellent examples > 100k mediocre ones. Format: instruction-response pairs in the model's expected chat template.</li>
+</ul>
+
+<p><strong>At inference:</strong> Two options. (1) Keep adapters separate and swap them per-request — one base model, multiple task-specific adapters. (2) Merge adapters into the base weights (W + A×B) — zero additional latency, but permanent.</p>
+
+<h3>QLoRA: Fine-tuning on Consumer Hardware</h3>
+
+<p>QLoRA's innovation: keep the frozen base model in 4-bit quantized form (NF4 format) while training the LoRA adapters in 16-bit. The base uses ~4× less memory than FP16, leaving room for the adapters and their gradients.</p>
+
+<p><strong>Practical impact:</strong></p>
+<ul>
+<li>Fine-tune a 7B model on a GPU with 6GB VRAM (like a gaming laptop)</li>
+<li>Fine-tune a 13B model on a 16GB GPU</li>
+<li>Fine-tune a 70B model on a single 48GB A100</li>
+</ul>
+
+<p>Quality is remarkably close to full fine-tuning — typically within 1-2% on benchmarks. The 4-bit base provides strong features; the 16-bit adapters learn the task-specific adjustments.</p>
+
+<h3>Model Merging: Combining Capabilities Without Training</h3>
+
+<p>Take two (or more) fine-tuned models and combine their weights into a single model. No additional training needed. The merged model inherits capabilities from both parents.</p>
+
+<p><strong>Why it works:</strong> Different fine-tunes modify different subspaces of the weight space. A medical fine-tune changes different parameters than a coding fine-tune. When you merge, these modifications can coexist — like overlaying two transparencies that each draw on different areas.</p>
+
+<p><strong>Methods:</strong></p>
+<ul>
+<li><strong>Linear merge (weighted average):</strong> W_merged = α × W_A + (1-α) × W_B. Simple but effective. Tune α to balance capabilities.</li>
+<li><strong>SLERP:</strong> Spherical interpolation. Smoother merging on the weight hypersphere. Best for two models.</li>
+<li><strong>TIES:</strong> Resolves conflicts between models — when both modified the same weight in opposite directions. Trims small changes, resolves sign conflicts, then merges.</li>
+<li><strong>DARE:</strong> Randomly drops a fraction of each model's fine-tuning changes, then rescales. The sparsification reduces interference between merged capabilities.</li>
+</ul>
+
+<p><strong>Tool:</strong> mergekit — the standard tool. Configure merge strategy and models in a YAML file, run the merge. CPU-only (no GPU needed for the merge itself). Takes minutes.</p>
+
+<p><strong>Example:</strong> Merge a Llama-70B fine-tuned on medical data with one fine-tuned on structured output → a single model that produces structured medical responses. No training cost.</p>
+
+<h2>Quantization for Deployment</h2>
+
+<p>Once you have your fine-tuned model, you need to make it serveable. Quantization compresses the model for deployment:</p>
+
+<h3>Format choice depends on deployment target:</h3>
+<ul>
+<li><strong>GPTQ:</strong> GPU-optimized quantization. Best for serving on NVIDIA GPUs. Fast inference, good quality. Supported by vLLM.</li>
+<li><strong>AWQ:</strong> Activation-aware quantization. Slightly better quality than GPTQ by preserving important weight channels. Also GPU-optimized. Growing support.</li>
+<li><strong>GGUF:</strong> CPU-optimized format for llama.cpp. Multiple quantization levels (Q4_K_M, Q5_K_M, Q8_0). The standard for local/edge deployment without GPUs.</li>
+<li><strong>EXL2:</strong> Variable bit-rate quantization. Different parts of the model get different precision based on sensitivity analysis. Can achieve better quality-size tradeoffs than uniform quantization.</li>
+</ul>
+
+<h3>The precision ladder:</h3>
+<p>FP16 (2 bytes/param, baseline quality) → INT8 (1 byte, minimal quality loss) → INT4 (0.5 bytes, noticeable but usually acceptable) → INT3/INT2 (aggressive, significant quality loss, only for very constrained deployments).</p>
+
+<p>Start from the bottom of the ladder (INT4) and only move up if quality is insufficient for your specific task.</p>
+
+<h2>The End-to-End Open Model Pipeline</h2>
+
+<ol>
+<li><strong>Choose base model:</strong> Llama-3.1-8B for efficiency, 70B for capability. Mistral for European data sovereignty. Gemma for small/edge deployments.</li>
+<li><strong>Prepare training data:</strong> 1000-10000 high-quality instruction-response pairs in the model's chat template format. Consider using a strong closed model (GPT-4) to generate or validate training data.</li>
+<li><strong>Fine-tune with QLoRA:</strong> Use libraries like Unsloth, Axolotl, or HuggingFace TRL. Set rank, alpha, target modules. Train for 1-3 epochs with evaluation at each epoch to detect overfitting.</li>
+<li><strong>Evaluate:</strong> Run your eval pipeline. Compare to the base model and to closed API models. Verify no catastrophic forgetting on general benchmarks.</li>
+<li><strong>Optional — Merge:</strong> If you have multiple fine-tunes for different capabilities, merge them with mergekit.</li>
+<li><strong>Quantize:</strong> GPTQ or AWQ for GPU serving, GGUF for CPU. Verify quality doesn't drop unacceptably after quantization.</li>
+<li><strong>Serve:</strong> vLLM (GPU production), llama.cpp (CPU/edge), Ollama (local development).</li>
+</ol>
+
+<p><strong>Tools ecosystem:</strong></p>
+<ul>
+<li><strong>Unsloth:</strong> 2× faster LoRA/QLoRA training with 70% less memory. The efficiency leader.</li>
+<li><strong>Axolotl:</strong> Configuration-driven fine-tuning. YAML config → trained model. Good for reproducibility.</li>
+<li><strong>HuggingFace TRL:</strong> Official library for SFT, DPO, RLHF. Most flexible, most community support.</li>
+<li><strong>mergekit:</strong> Model merging. SLERP, TIES, DARE, linear. CPU-only.</li>
+<li><strong>llama.cpp:</strong> Quantization to GGUF + CPU inference engine.</li>
+<li><strong>HuggingFace Hub:</strong> The "npm of models." Download, upload, and share models and adapters.</li>
+</ul>
+
+<div class="analogy"><strong>Medical analogy:</strong> Think of the open model ecosystem like drug compounding. The base model is the active ingredient (developed by pharma/model providers). LoRA is your formulation (adapting it for your specific clinical need). Quantization is the dosage form (making it deliverable on your available hardware). Merging is combination therapy (combining multiple adaptations into one). And the evaluation pipeline is your clinical trial — proving it works and is safe before deployment.</div>
+`
 }
 ];
