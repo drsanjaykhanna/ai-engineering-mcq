@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AI MCQ">
+  <meta name="theme-color" content="#6366f1">
+  <title>AI Engineering MCQ</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Home Screen -->
+    <div id="screen-home" class="screen active">
+      <div class="home-header">
+        <h1>AI Engineering<br><span class="accent">MCQ Bank</span></h1>
+        <p class="subtitle">Interview-ready knowledge in your pocket</p>
+      </div>
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-num" id="stat-total">0</span>
+          <span class="stat-label">Questions</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="stat-done">0</span>
+          <span class="stat-label">Done</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="stat-pct">0%</span>
+          <span class="stat-label">Correct</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="stat-mastered">0</span>
+          <span class="stat-label">Mastered</span>
+        </div>
+      </div>
+      <div class="home-actions">
+        <button class="btn btn-primary btn-lg" onclick="app.startQuickMix()">Quick Mix (20 Qs)</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.showScreen('topics')">Browse Topics</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.startWeakest()">Weakest Areas</button>
+        <button class="btn btn-secondary btn-lg" onclick="app.startFlagged()">Flagged Questions</button>
+      </div>
+      <div class="home-footer">
+        <button class="btn-text" onclick="app.showScreen('stats')">View Stats</button>
+        <button class="btn-text" onclick="app.resetProgress()">Reset Progress</button>
+      </div>
+    </div>
+
+    <!-- Topics Screen -->
+    <div id="screen-topics" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Topics</h2>
+        <div class="spacer"></div>
+      </div>
+      <div id="topic-list" class="topic-list"></div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="screen-quiz" class="screen">
+      <div class="quiz-header">
+        <button class="back-btn" onclick="app.endQuiz()">&larr;</button>
+        <div class="quiz-progress">
+          <span id="quiz-counter">1/20</span>
+          <span id="streak-display" class="streak-display"></span>
+          <div class="progress-bar"><div id="quiz-progress-fill" class="progress-fill"></div></div>
+        </div>
+        <button class="flag-btn" id="flag-btn" onclick="app.toggleFlag()">&#9873;</button>
+      </div>
+      <div class="quiz-body">
+        <div class="topic-badge" id="quiz-topic"></div>
+        <div class="question-text" id="quiz-question"></div>
+        <div class="options" id="quiz-options"></div>
+        <div class="explanation hidden" id="quiz-explanation"></div>
+      </div>
+      <div class="quiz-footer">
+        <button class="btn btn-primary btn-lg hidden" id="next-btn" onclick="app.nextQuestion()">Next Question</button>
+      </div>
+    </div>
+
+    <!-- Stats Screen -->
+    <div id="screen-stats" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Statistics</h2>
+        <div class="spacer"></div>
+      </div>
+      <div id="stats-body" class="stats-body"></div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="screen-results" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="app.showScreen('home')">&larr;</button>
+        <h2>Session Complete</h2>
+        <div class="spacer"></div>
+      </div>
+      <div class="results-body">
+        <div class="results-score">
+          <span class="results-pct" id="results-pct">0%</span>
+          <span class="results-label">Score</span>
+        </div>
+        <div class="results-breakdown" id="results-breakdown"></div>
+        <button class="btn btn-primary btn-lg" onclick="app.showScreen('home')">Back to Home</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="knowledge.js"></script>
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
