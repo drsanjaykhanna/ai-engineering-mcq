@@ -2441,5 +2441,265 @@ const QUESTIONS = [
     "Incorrect. RLHF doesn't modify the vocabulary. It changes the model's output distribution over existing tokens.",
     "Incorrect. RLHF doesn't affect generation speed. Models don't have a 'fact-checking step' that could be skipped."
   ]
+},
+// === RAG VARIATIONS ===
+{
+  id: "rag16", topic: "RAG Systems", pageId: "kp_self_rag",
+  question: "What does Self-RAG do that basic RAG doesn't?",
+  options: [
+    "It uses a better embedding model",
+    "The model itself decides WHETHER to retrieve, evaluates retrieval quality, and checks its own output for faithfulness",
+    "It retrieves from multiple databases simultaneously",
+    "It fine-tunes the model after each retrieval"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Self-RAG's innovation is in the control flow, not the embedding model. Any embedding model can be used.",
+    "Correct. Self-RAG adds metacognition — the model generates reflection tokens: 'Do I need to retrieve?' (maybe not for simple questions), 'Is this chunk relevant?' (filter bad retrievals), 'Does my answer match the evidence?' (catch hallucination). The model becomes its own quality controller, instead of blindly trusting every retrieval result.",
+    "Incorrect. Multi-source retrieval is a different technique. Self-RAG is about the model's self-evaluation, not data source diversity.",
+    "Incorrect. No training happens during inference. Self-RAG uses special tokens for self-reflection, not weight updates."
+  ]
+},
+{
+  id: "rag17", topic: "RAG Systems", pageId: "kp_self_rag",
+  question: "RAPTOR builds a tree of document summaries. Why is this better than flat chunking for certain queries?",
+  options: [
+    "It uses less storage",
+    "High-level summary queries can be answered from parent nodes without processing every individual chunk",
+    "It's faster to index",
+    "It eliminates the need for embedding models"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. RAPTOR uses MORE storage (original chunks + all levels of summaries). The benefit is answer quality, not storage.",
+    "Correct. With flat chunking, answering 'What are the main themes across all these documents?' requires retrieving and synthesizing hundreds of individual chunks — often hitting context limits. RAPTOR's hierarchy has pre-computed summaries at different abstraction levels. The query hits a high-level summary node that already synthesizes the information. Specific queries still drill down to leaf chunks.",
+    "Incorrect. Building the summary tree requires multiple LLM calls and is slower than flat indexing.",
+    "Incorrect. RAPTOR still uses embeddings for search within the tree. The hierarchy is orthogonal to the embedding approach."
+  ]
+},
+// === FUNCTION CALLING ===
+{
+  id: "ag10", topic: "AI Agents & Tool Use", pageId: "kp_function_calling",
+  question: "Why is it critical to validate function call arguments BEFORE executing the tool?",
+  options: [
+    "To improve response speed",
+    "The model might hallucinate invalid arguments — executing them blindly could cause errors, data corruption, or security breaches",
+    "To reduce API costs",
+    "Validation is optional for well-tested models"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Validation adds a small latency cost. The purpose is safety and correctness, not speed.",
+    "Correct. The model generates arguments probabilistically — it might pass a nonexistent user ID to a delete function, invalid SQL to a database query, or a malicious payload via prompt injection. Always: (1) check types match the schema, (2) validate values are within expected ranges, (3) sanitize strings (prevent injection), (4) confirm destructive actions with human approval. The model is an untrusted input source for your tool calls.",
+    "Incorrect. Validation doesn't affect API costs. It prevents bad outcomes from executing invalid or dangerous tool calls.",
+    "Incorrect. No model is 'well-tested enough' to skip validation. Even GPT-4 hallucinates function arguments. This is a security-critical practice, not an optional optimization."
+  ]
+},
+{
+  id: "ag11", topic: "AI Agents & Tool Use", pageId: "kp_function_calling",
+  question: "A developer defines a tool as: {'name': 'search', 'description': 'search', 'parameters': {'q': 'string'}}. The model keeps choosing the wrong tool. Why?",
+  options: [
+    "The model doesn't support function calling",
+    "The description is too vague — the model uses descriptions to decide which tool to use, so they must clearly explain the tool's purpose",
+    "The parameter name 'q' is too short",
+    "The tool needs more parameters"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. If the model didn't support function calling, it wouldn't attempt to call ANY tool, not just the wrong one.",
+    "Correct. Tool selection is based primarily on the description. 'search' tells the model nothing — search what? Web? Database? Files? A description like 'Search the company knowledge base for product documentation and support articles' gives the model enough context to know WHEN this tool is appropriate vs other tools. Clear, specific descriptions are essential.",
+    "Incorrect. Short parameter names work fine. The model maps user intent to parameters based on the schema and description, not parameter name length.",
+    "Incorrect. The number of parameters doesn't affect tool selection. The model first decides WHICH tool, then fills parameters."
+  ]
+},
+// === INFERENCE MATH ===
+{
+  id: "io10", topic: "Inference & Quantization", pageId: "kp_inference_math",
+  question: "You need to serve Llama-2-70B. You have one A100 80GB GPU. What precision do you need?",
+  options: [
+    "FP16 — it fits at 140GB on an 80GB GPU",
+    "INT8 — 70GB fits on 80GB with a little room for KV-cache",
+    "INT4 — 35GB gives comfortable room for KV-cache and batching",
+    "FP32 — always use full precision for production"
+  ],
+  correct: 2,
+  explanation: [
+    "Incorrect. FP16 requires 140GB (70B × 2 bytes) — nearly double the GPU's memory. You'd need at least 2 GPUs.",
+    "Incorrect. While 70GB fits in 80GB, you'd have only 10GB left for KV-cache and overhead. At 4096 tokens, KV-cache for Llama-70B is ~1.3GB per request — you could serve maybe 5-7 concurrent requests before running out of memory. Very tight.",
+    "Correct. INT4 uses ~35GB for model weights, leaving 45GB for KV-cache and system overhead. That's room for ~30+ concurrent requests at 4096 context length. This is the practical choice — quality at INT4 with AWQ is excellent for most applications.",
+    "Incorrect. FP32 requires 280GB (70B × 4 bytes) — 3.5× the GPU memory. And there's no quality benefit over FP16 for inference (FP32 only matters for TRAINING gradient accumulation)."
+  ]
+},
+{
+  id: "io11", topic: "Inference & Quantization", pageId: "kp_inference_math",
+  question: "A model has 80 layers and 8 KV heads of dimension 128, using FP16. How much KV-cache memory does a single 4096-token request use?",
+  options: [
+    "About 100MB",
+    "About 640MB",
+    "About 1.3GB",
+    "About 10GB"
+  ],
+  correct: 2,
+  explanation: [
+    "Incorrect. 100MB is too low. The calculation: 2 (K+V) × 80 layers × 4096 tokens × 128 dim × 8 heads × 2 bytes.",
+    "Incorrect. You need to account for both K and V, all layers, all KV heads, and the full sequence length.",
+    "Correct. Memory = 2 (K+V) × 80 (layers) × 4096 (tokens) × 128 (head dim) × 8 (KV heads) × 2 (FP16 bytes) = 2 × 80 × 4096 × 128 × 8 × 2 = 1,342,177,280 bytes ≈ 1.3GB. This means serving 30 concurrent requests needs ~39GB just for KV-cache, on top of model weights. This is why KV-cache management (PagedAttention, GQA) matters so much.",
+    "Incorrect. 10GB per request would mean you can only serve 4-5 concurrent requests on an A100. The actual number is ~1.3GB, which is still substantial."
+  ]
+},
+// === HARNESS ENGINEERING ===
+{
+  id: "he1", topic: "AI Engineering Architecture", pageId: "kp_harness",
+  question: "What is the 'harness' in AI engineering?",
+  options: [
+    "The GPU hardware that runs the model",
+    "All the orchestration code AROUND the LLM: prompt management, context assembly, output parsing, error handling, routing, caching",
+    "The model's internal architecture",
+    "The training infrastructure"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Hardware is infrastructure. The harness is the application-level code and systems around the model.",
+    "Correct. The harness is everything between the user's request and the model's response: constructing the prompt, retrieving context (RAG), parsing output, handling errors, routing to the right model, caching responses, applying guardrails. The model call itself is often just one line of code — the harness is the other 95% of the application. This is where most AI engineering work happens.",
+    "Incorrect. Internal architecture (attention, FFN) is the model itself. The harness is the external orchestration layer.",
+    "Incorrect. Training infrastructure supports model development. The harness supports model DEPLOYMENT and APPLICATION."
+  ]
+},
+{
+  id: "he2", topic: "AI Engineering Architecture", pageId: "kp_output_parsing",
+  question: "Your LLM-powered API returns invalid JSON 3% of the time, causing downstream failures. What's the production-grade fix?",
+  options: [
+    "Add 'please return valid JSON' to the prompt",
+    "Layer defenses: use structured output mode, validate against schema, retry with error feedback on failure, and fall back gracefully if retries fail",
+    "Switch to a different model",
+    "Accept the 3% failure rate"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Prompt instructions help but don't guarantee validity. You might go from 3% to 1% failure — still unacceptable for production.",
+    "Correct. Production-grade approach: (1) Use structured output mode / JSON mode if available. (2) Validate every response against your expected schema. (3) If invalid, retry with the error message fed back to the model. (4) If retries fail, fall back to a simpler format or return a graceful error. This layered approach handles the probabilistic nature of LLMs with deterministic engineering.",
+    "Incorrect. All models have some JSON formatting failure rate with prompt-only approaches. The fix is in the harness (validation + retry + fallback), not model selection.",
+    "Incorrect. 3% failure rate means ~3000 errors per 100k requests. That's unacceptable for any production API. Users experience random failures, downstream systems crash."
+  ]
+},
+{
+  id: "he3", topic: "AI Engineering Architecture", pageId: "kp_harness",
+  question: "A team builds a complex LangChain pipeline with 6 retrieval stages, 3 LLM calls, and custom caching before testing the basic prompt. What's wrong with this approach?",
+  options: [
+    "They should be using LangGraph instead",
+    "They should validate the core LLM behavior FIRST with a simple prompt, then add orchestration layers incrementally",
+    "They need more retrieval stages",
+    "Nothing — complex architectures are always better"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. The choice between LangChain and LangGraph isn't the issue. The problem is building complexity before validating fundamentals.",
+    "Correct. This is the harness anti-pattern: over-engineering before validation. If the basic prompt doesn't produce good output, no amount of retrieval stages or caching will fix it. Start with: (1) Does the model understand the task with a simple prompt? (2) Add RAG if it needs external knowledge. (3) Add re-ranking if retrieval quality is insufficient. (4) Add caching once the system works. Build the harness incrementally, validating each layer.",
+    "Incorrect. More complexity compounds the problem. Each layer adds latency, cost, and failure modes.",
+    "Incorrect. Complex architectures are harder to debug, more expensive, and often worse than simple ones. Complexity should be justified by specific requirements, not added preemptively."
+  ]
+},
+// === REAL-WORLD SCENARIOS ===
+{
+  id: "rw1", topic: "AI Engineering Architecture", pageId: "kp_decision_tree",
+  question: "SCENARIO: A legal firm wants AI to review contracts and flag risky clauses. The model must NEVER hallucinate risks that don't exist. What architecture do you recommend?",
+  options: [
+    "Fine-tune a model on legal data and trust its output",
+    "RAG with the contract as context, low temperature, explicit grounding instructions, citation enforcement, and human-in-the-loop for all flagged items",
+    "Use an agent that searches legal databases",
+    "Basic prompting with GPT-4"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Fine-tuning doesn't prevent hallucination — it might even increase it if the model confidently invents risks based on training patterns. No human review loop = unacceptable for legal.",
+    "Correct. For high-stakes legal review: (1) RAG: feed the actual contract as context (not from memory). (2) Low temperature: minimize creative fabrication. (3) Grounding: 'Only flag clauses that are explicitly present in the contract. Quote the exact text.' (4) Citations: require the model to cite specific clause numbers/text — if it can't cite it, it's hallucinating. (5) Human-in-the-loop: every AI flag gets human lawyer review before action. Defense in depth for a domain where false positives have legal consequences.",
+    "Incorrect. An agent adds autonomy and unpredictability — the opposite of what you want in high-stakes legal review. You want a controlled, auditable pipeline.",
+    "Incorrect. Basic prompting provides no grounding, no citation enforcement, and no guardrails against hallucination. Insufficient for legal use."
+  ]
+},
+{
+  id: "rw2", topic: "AI Engineering Architecture", pageId: "kp_tradeoffs",
+  question: "SCENARIO: Your startup's LLM costs are $50k/month. The CEO wants you to halve them without hurting quality. What's your plan?",
+  options: [
+    "Switch entirely to open-source models",
+    "Implement model routing (cheap model for easy queries), prompt caching, semantic response caching, and batch processing for non-urgent tasks",
+    "Reduce the number of users",
+    "Remove all guardrails to save on processing"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Switching entirely to open-source requires infrastructure investment (GPUs, serving), may reduce quality, and introduces operational complexity. It could save money long-term but isn't a quick 50% cut.",
+    "Correct. The layered cost reduction strategy: (1) Model routing: send 80% of 'easy' queries to GPT-4o-mini (~20× cheaper). Potential savings: 60-70%. (2) Prompt caching: structure prompts with static prefix for API-level caching. Savings: 30-50% on input tokens. (3) Semantic caching: cache responses for repeated/similar queries. Savings depend on query repetition. (4) Batch API for offline processing (50% cost). Combined, you can realistically cut 50-70% without touching quality.",
+    "Incorrect. Reducing users is a business failure, not a technical solution.",
+    "Incorrect. Removing guardrails saves minimal compute cost but introduces massive risk (harmful outputs, PII leakage, security vulnerabilities). The cost savings don't justify the risk."
+  ]
+},
+{
+  id: "rw3", topic: "RAG Systems", pageId: "kp_rag_production",
+  question: "SCENARIO: Your RAG system works great in testing but in production, users report answers are 'outdated'. The source documents were updated last week. What's wrong?",
+  options: [
+    "The model has an old training cutoff date",
+    "The vector index wasn't re-built after documents were updated — the system is retrieving from stale embeddings",
+    "Users are asking questions about the future",
+    "The embedding model needs to be retrained"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. RAG answers come from retrieved context, not model memory. If the model sees the updated document in its context, it'll give the current answer regardless of its training cutoff.",
+    "Correct. Classic production RAG failure: documents were updated but the index still contains embeddings of the OLD versions. The retrieval system finds and returns outdated chunks. Fix: implement an indexing pipeline that detects document changes and re-embeds/re-indexes updated content. Incremental re-indexing > full rebuild for efficiency.",
+    "Incorrect. The question says documents were updated last week and answers are outdated — this points to index staleness, not temporal confusion.",
+    "Incorrect. Embedding models don't need retraining when documents change. You re-EMBED the documents with the same model, updating the vectors in the index."
+  ]
+},
+{
+  id: "rw4", topic: "AI Agents & Tool Use", pageId: "kp_function_calling",
+  question: "SCENARIO: An internal AI agent has access to the company's production database (read and write). A user through prompt injection tricks the agent into running 'DELETE FROM users'. How should this have been prevented?",
+  options: [
+    "Better prompt engineering to resist injection",
+    "The agent should NEVER have had write access to production. Least privilege: read-only access, parameterized queries only, and destructive actions require human approval",
+    "Input validation on the user's message",
+    "A stronger model that can resist manipulation"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Prompt engineering can reduce injection success but is never a guarantee. You can't prompt-engineer away a security vulnerability — you must architecturally prevent the damage.",
+    "Correct. Defense in depth: (1) Read-only database access (write permission was never needed for the agent's function). (2) Parameterized queries only — never raw SQL. (3) Allowlisted operations — the agent can only call pre-defined functions, not arbitrary queries. (4) Destructive actions require human approval. Even if injection succeeds, these architectural controls prevent damage. Assume the agent WILL be compromised; limit the blast radius.",
+    "Incorrect. Input validation helps but can be bypassed — especially with indirect injection through data the agent processes. You need architectural controls, not just input filtering.",
+    "Incorrect. No model is immune to prompt injection. Security must come from the system architecture (permissions, validation), not model robustness."
+  ]
+},
+{
+  id: "rw5", topic: "Deployment & MLOps", pageId: "kp_langfuse",
+  question: "SCENARIO: Users report your AI assistant sometimes gives wrong answers, but you can't reproduce it. What do you need?",
+  options: [
+    "Better unit tests",
+    "LLM observability: request tracing, logging of prompts + retrievals + model outputs, so you can see exactly what happened for any failed request",
+    "A more capable model",
+    "More training data"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Unit tests verify code correctness, not LLM output quality. LLM failures are content-level (wrong but plausible answers), not code-level.",
+    "Correct. Without observability, debugging LLM applications is like debugging without logs. You need: (1) Full traces for each request (what was retrieved, what prompt was constructed, what the model output). (2) User feedback collection (thumbs up/down). (3) The ability to replay any failed request to understand what went wrong. Tools like Langfuse or LangSmith provide this. Without it, you're guessing.",
+    "Incorrect. A more capable model might reduce errors but you still can't debug the ones that occur. Observability is needed regardless of model quality.",
+    "Incorrect. If you can't even see what's going wrong, more training data is a shot in the dark. Diagnose first, then fix."
+  ]
+},
+{
+  id: "rw6", topic: "AI Engineering Architecture", pageId: "kp_harness",
+  question: "SCENARIO: You're building a research assistant agent. It works 90% of the time but occasionally enters infinite loops (keeps calling the same tool repeatedly). What's the fix?",
+  options: [
+    "Use a larger model",
+    "Add loop detection and circuit breakers: max iterations per tool, max total steps, timeout, and fallback to 'I couldn't find the answer' after hitting limits",
+    "Remove all tools to prevent loops",
+    "Add more tools so it has alternatives"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Larger models can still enter loops. The fix is in the harness (orchestration logic), not the model.",
+    "Correct. Production agent harness needs: (1) Max iterations per tool (e.g., don't call search more than 3 times). (2) Max total steps (e.g., 10 steps total before giving up). (3) Timeout (e.g., 60 seconds total). (4) Loop detection (if the same tool is called with the same arguments, break). (5) Graceful fallback ('I researched this but couldn't find a definitive answer. Here's what I found...'). The harness constrains the agent's behavior within safe bounds.",
+    "Incorrect. Removing tools defeats the purpose of the agent. You need tools but with guardrails around their usage.",
+    "Incorrect. More tools won't prevent loops — the model might loop on any of them. You need harness-level constraints."
+  ]
 }
 ];

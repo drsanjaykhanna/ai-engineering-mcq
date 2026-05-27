@@ -1300,5 +1300,213 @@ const KNOWLEDGE_PAGES = [
     "High-risk (hiring, credit, law enforcement): requires risk assessments, human oversight, accuracy monitoring",
     "Foundation model providers: must document training data, comply with copyright, assess systemic risks"
   ]
+},
+// === RAG VARIATIONS ===
+{
+  id: "kp_self_rag",
+  title: "Self-RAG, CRAG, and RAPTOR: Advanced RAG Architectures",
+  content: `<p>Beyond basic and advanced RAG, several research-driven architectures solve specific failure modes:</p>
+<p><strong>Self-RAG (Self-Reflective RAG):</strong> The model decides ON ITS OWN whether it needs to retrieve, evaluates the quality of what it retrieved, and checks its own output for faithfulness. It generates special "reflection tokens" during output: [Retrieve] (do I need to look something up?), [IsRelevant] (is the retrieved chunk useful?), [IsSupportive] (does my response match the evidence?). This makes the model its own quality controller.</p>
+<p><strong>Corrective RAG (CRAG):</strong> Adds an explicit evaluation step after retrieval. A lightweight evaluator grades each retrieved document as "correct," "ambiguous," or "incorrect." Correct docs go straight to generation. Ambiguous docs get refined through further retrieval. Incorrect docs trigger a fallback (web search, alternative knowledge source). The system self-corrects retrieval failures instead of blindly generating from bad context.</p>
+<p><strong>RAPTOR (Recursive Abstractive Processing for Tree-Organized Retrieval):</strong> Builds a hierarchical tree of summaries. Leaf nodes are raw text chunks. Parent nodes are LLM-generated summaries of their children. Grandparent nodes summarize the parents. This creates multiple levels of abstraction. Specific questions hit the leaves; broad questions hit the summaries. Solves the "can't see the forest for the trees" problem in basic RAG.</p>
+<p><strong>Adaptive RAG:</strong> The system decides dynamically whether to use simple retrieval, multi-step retrieval, or no retrieval at all — based on query complexity. Simple factual questions use basic RAG. Complex queries trigger iterative retrieval. Common knowledge queries skip retrieval entirely.</p>`,
+  keyPoints: [
+    "Self-RAG: model generates reflection tokens to self-assess whether to retrieve, whether context is relevant, whether answer is supported",
+    "CRAG: evaluator grades retrieved docs (correct/ambiguous/incorrect) → self-corrects by re-retrieving or falling back to web search",
+    "RAPTOR: hierarchical summary tree. Leaves = raw chunks, parents = summaries. Specific Qs hit leaves, broad Qs hit summaries.",
+    "Adaptive RAG: dynamically choose retrieval strategy based on query complexity. Don't over-retrieve for simple questions."
+  ]
+},
+// === FUNCTION CALLING ===
+{
+  id: "kp_function_calling",
+  title: "Function Calling (Tool Use): How LLMs Interact With the World",
+  content: `<p><strong>Function calling</strong> is the mechanism that lets LLMs take actions beyond generating text — calling APIs, querying databases, running code, sending emails. It's the foundation of agent capabilities.</p>
+<p><strong>How it works:</strong></p>
+<p>1. <strong>Define tools:</strong> You provide the model with a list of available functions, each described by a name, description, and JSON schema of parameters. Example: {"name": "get_weather", "description": "Get current weather for a city", "parameters": {"city": "string", "units": "celsius|fahrenheit"}}.</p>
+<p>2. <strong>Model decides to call:</strong> Based on the user's request, the model outputs a structured function call instead of text: {"function": "get_weather", "arguments": {"city": "London", "units": "celsius"}}.</p>
+<p>3. <strong>System executes:</strong> Your application catches this structured output, calls the actual function, gets the result.</p>
+<p>4. <strong>Result fed back:</strong> The function result is appended to the conversation, and the model generates a final response incorporating the real data.</p>
+<p><strong>Parallel function calling:</strong> Modern APIs support calling multiple functions simultaneously when they're independent. "What's the weather in London AND the price of AAPL?" → two parallel calls.</p>
+<p><strong>Critical design principles:</strong></p>
+<p>• <strong>Clear descriptions:</strong> The model decides which tool to use based on the description. Vague descriptions → wrong tool selection.</p>
+<p>• <strong>Typed parameters:</strong> Use strict JSON schemas. The model fills in arguments — if the schema is loose, arguments will be messy.</p>
+<p>• <strong>Least privilege:</strong> Only expose the tools the model needs. Every tool is an attack surface if the model is compromised via prompt injection.</p>
+<p>• <strong>Validation:</strong> ALWAYS validate the model's function call arguments before executing. The model might pass unexpected values.</p>`,
+  keyPoints: [
+    "Pipeline: Define tools (name + description + JSON schema) → model outputs structured call → system executes → result fed back → model responds",
+    "Tool descriptions are critical: model chooses tools based on descriptions. Bad description = wrong tool selection.",
+    "Always validate arguments before execution. The model might hallucinate invalid parameters.",
+    "Least privilege: only expose necessary tools. Each tool = potential attack surface via prompt injection."
+  ]
+},
+// === INFERENCE MATH ===
+{
+  id: "kp_inference_math",
+  title: "Inference Math: How to Calculate GPU Memory Requirements",
+  content: `<p>Being able to quickly estimate memory requirements is a key AI engineering skill. Here's the math:</p>
+<p><strong>Model weights:</strong></p>
+<p>• FP32: params × 4 bytes. 7B model = 28GB.</p>
+<p>• FP16/BF16: params × 2 bytes. 7B = 14GB. 70B = 140GB.</p>
+<p>• INT8: params × 1 byte. 7B = 7GB. 70B = 70GB.</p>
+<p>• INT4: params × 0.5 bytes. 7B = 3.5GB. 70B = 35GB.</p>
+<p><strong>KV-cache (per request):</strong></p>
+<p>• Memory = 2 × num_layers × seq_length × head_dim × num_kv_heads × precision_bytes</p>
+<p>• For Llama-2-70B (80 layers, GQA with 8 KV heads, 128 head_dim, FP16): 2 × 80 × seq_len × 128 × 8 × 2 bytes = 327,680 × seq_len bytes</p>
+<p>• At 4096 tokens: ~1.3GB per request. At 128k tokens: ~40GB per request!</p>
+<p><strong>Quick rules of thumb:</strong></p>
+<p>• Model in FP16: ~2GB per billion parameters</p>
+<p>• Model in INT4: ~0.5GB per billion parameters</p>
+<p>• A100 80GB can serve: 70B in INT4 (~35GB model + room for KV-cache) or 13B in FP16 (~26GB + KV-cache)</p>
+<p>• H100 80GB: same memory, faster compute. 2× A100 throughput.</p>
+<p><strong>Batch size:</strong> Total memory = model weights + (KV-cache per request × batch size). To serve more concurrent users, you need more memory for KV-cache, which is why PagedAttention matters so much — it eliminates wasted KV-cache memory.</p>`,
+  keyPoints: [
+    "Quick math: FP16 ≈ 2GB per billion params. INT4 ≈ 0.5GB per billion. 70B in INT4 ≈ 35GB.",
+    "KV-cache scales with: layers × sequence_length × KV_heads × head_dim. Long contexts = huge cache.",
+    "A100 80GB can fit: 70B INT4 or 13B FP16 (with room for KV-cache and batching)",
+    "Total GPU memory = model weights + (KV-cache per request × concurrent requests). Batch size limited by memory."
+  ],
+  comparison: {
+    title: "GPU Memory Cheat Sheet",
+    headers: ["Model", "FP16", "INT8", "INT4", "Fits on A100 80GB?"],
+    rows: [
+      ["7B", "14GB", "7GB", "3.5GB", "Yes (any precision)"],
+      ["13B", "26GB", "13GB", "6.5GB", "Yes (any precision)"],
+      ["34B", "68GB", "34GB", "17GB", "FP16 tight, INT4 easy"],
+      ["70B", "140GB", "70GB", "35GB", "INT4 yes, FP16 needs 2×GPU"],
+      ["405B", "810GB", "405GB", "~200GB", "Needs 3-6 GPUs even at INT4"]
+    ]
+  }
+},
+// === HARNESS / ORCHESTRATION ENGINEERING ===
+{
+  id: "kp_harness",
+  title: "Harness Engineering: The Orchestration Layer Around LLMs",
+  content: `<p>The <strong>harness</strong> (or orchestration layer) is all the code and infrastructure AROUND the LLM that turns a raw model call into a production system. In practice, this is where most engineering effort goes. The model is a component; the harness is the product.</p>
+<p><strong>What the harness does:</strong></p>
+<p>• <strong>Prompt management:</strong> Constructing, versioning, and templating prompts. System prompts, few-shot examples, context packing, dynamic variable insertion. Prompt templates should be version-controlled like code.</p>
+<p>• <strong>Context assembly:</strong> For RAG: orchestrating the retrieval pipeline (embed query → search → re-rank → format chunks → pack into prompt). For agents: managing conversation history, tool results, and state.</p>
+<p>• <strong>Output parsing:</strong> Extracting structured data from model outputs. Parsing JSON, validating against schemas, handling malformed output gracefully (retry, fallback).</p>
+<p>• <strong>Error handling:</strong> Retry logic for API failures, rate limit management, timeout handling, fallback models (if primary model fails, try secondary). Circuit breakers to prevent cascade failures.</p>
+<p>• <strong>Guardrails integration:</strong> Input validation, output filtering, PII detection, content moderation — all orchestrated by the harness.</p>
+<p>• <strong>Caching:</strong> Exact-match caching (same query → same response), semantic caching (similar query → cached response), prompt prefix caching (API-level).</p>
+<p>• <strong>Routing:</strong> Directing queries to different models based on complexity, cost tier, or task type.</p>
+<p><strong>The harness anti-pattern:</strong> Over-engineering the harness before you've validated the core LLM behavior. Start with the simplest possible harness (direct API call + basic error handling), get the LLM behavior right, THEN add layers. Don't build a complex orchestration framework before your prompt works.</p>`,
+  keyPoints: [
+    "Harness = everything around the LLM: prompt management, context assembly, output parsing, error handling, routing, caching",
+    "This is where 80% of production engineering effort goes. The model call itself is often the simplest part.",
+    "Version control prompts like code. Test prompt changes like code changes (eval pipeline).",
+    "Anti-pattern: over-engineering the harness before the core LLM behavior works. Start simple, add layers."
+  ]
+},
+{
+  id: "kp_output_parsing",
+  title: "Output Parsing and Error Recovery: Making LLM Output Reliable",
+  content: `<p>LLMs output free text, but applications need structured, reliable data. The gap between "usually works" and "always works" is where production engineering lives.</p>
+<p><strong>Parsing strategies (from simplest to most robust):</strong></p>
+<p>1. <strong>Regex extraction:</strong> Pull specific patterns from text output. Fast, simple, but brittle — any output format change breaks it.</p>
+<p>2. <strong>JSON parsing with repair:</strong> Ask for JSON output, attempt JSON.parse(), if it fails try common fixes (remove trailing commas, fix unclosed brackets, strip markdown code fences). Libraries like json-repair handle common LLM JSON errors.</p>
+<p>3. <strong>Structured output modes:</strong> Use API features (OpenAI JSON mode, response_format) that guarantee valid JSON structure. More reliable but constrains the model.</p>
+<p>4. <strong>Constrained decoding:</strong> Outlines/SGLang enforce grammar at the token level. 100% structural validity. Most robust.</p>
+<p><strong>Error recovery patterns:</strong></p>
+<p>• <strong>Retry with feedback:</strong> If parsing fails, send the malformed output back to the model with "This output was invalid JSON. Please fix: [error message]." Often works on retry.</p>
+<p>• <strong>Fallback models:</strong> If the primary model's output is unparseable, try a different model.</p>
+<p>• <strong>Graceful degradation:</strong> If structured output fails after retries, fall back to a simpler format or return a human-readable error rather than crashing.</p>
+<p><strong>The production rule:</strong> Never trust LLM output without validation. Parse it, validate it against a schema, handle failures gracefully. The model is not a reliable API — it's a probabilistic text generator that USUALLY outputs what you asked for.</p>`,
+  keyPoints: [
+    "Parsing ladder: regex (brittle) → JSON with repair → structured output mode → constrained decoding (bulletproof)",
+    "Retry with feedback: send malformed output back to model with error message. Often self-corrects on retry.",
+    "Never trust LLM output without validation. Parse, validate against schema, handle failures gracefully.",
+    "The model is a probabilistic text generator, not a reliable API. Build your harness accordingly."
+  ]
+},
+// === DEFINITIONS / GLOSSARY ===
+{
+  id: "kp_glossary_models",
+  title: "Glossary: Model & Architecture Terms",
+  content: `<p><strong>Transformer:</strong> The neural network architecture behind all modern LLMs. Uses self-attention to process sequences in parallel (unlike RNNs which process sequentially). Introduced in "Attention Is All You Need" (2017).</p>
+<p><strong>Parameter:</strong> A single learnable weight in the neural network. A "7B model" has 7 billion parameters. More parameters generally = more capacity to learn, but also more memory and compute.</p>
+<p><strong>Token:</strong> The atomic unit LLMs operate on. A subword piece, not a word. "Understanding" might be 1-3 tokens. ~1.3 tokens per English word on average.</p>
+<p><strong>Context window:</strong> Maximum tokens the model can process in a single call (input + output combined). GPT-4: 128k. Claude: 200k. Determines how much information fits in one prompt.</p>
+<p><strong>Embedding:</strong> A dense vector representation of text (or other data) that captures semantic meaning. Similar meaning → similar vectors. The basis of semantic search and RAG.</p>
+<p><strong>Inference:</strong> Running a trained model to produce output (as opposed to training it). "Inference time" = when the model is being used, not trained.</p>
+<p><strong>Latency:</strong> Time from request to response. TTFT (Time To First Token) = how long before output starts streaming. Important for user experience.</p>
+<p><strong>Throughput:</strong> Tokens per second the system can generate across all concurrent requests. Important for cost and scale.</p>
+<p><strong>Foundation model:</strong> A large model pre-trained on broad data that can be adapted to many tasks. GPT-4, Llama, Claude are foundation models.</p>
+<p><strong>Open-weight:</strong> Model weights are publicly available for download and use. Not the same as open-source (which includes training code and data too).</p>`,
+  keyPoints: [
+    "Parameter = one learnable weight. 7B model = 7 billion weights. More params = more capacity but more cost.",
+    "Token ≠ word. ~1.3 tokens per English word. Context window = max tokens per call (input + output).",
+    "Inference = using the model (not training). TTFT = time to first token. Throughput = tokens/sec across all requests.",
+    "Foundation model = broadly pre-trained, adaptable. Open-weight = weights public. Open-source = everything public."
+  ]
+},
+{
+  id: "kp_glossary_training",
+  title: "Glossary: Training & Alignment Terms",
+  content: `<p><strong>Pre-training:</strong> The initial massive training phase. Trillions of tokens, weeks on thousands of GPUs. Creates the base model with broad language understanding. Done by model providers, not AI engineers.</p>
+<p><strong>Fine-tuning:</strong> Further training on a smaller, task-specific dataset. Adapts the model's behavior. Full fine-tuning updates all weights; PEFT methods (LoRA) update only a small subset.</p>
+<p><strong>SFT (Supervised Fine-Tuning):</strong> Fine-tuning on (instruction, response) pairs. Teaches the model the format and style of being an assistant.</p>
+<p><strong>RLHF:</strong> Reinforcement Learning from Human Feedback. Three stages: SFT → train reward model on human preferences → optimize policy with PPO. Aligns model behavior with what humans prefer.</p>
+<p><strong>DPO:</strong> Direct Preference Optimization. Achieves RLHF's goal without a reward model — directly trains on preference pairs. Simpler, more stable.</p>
+<p><strong>LoRA:</strong> Low-Rank Adaptation. Freezes base model, adds tiny trainable adapters. Key hyperparameters: rank (r), alpha (α), target modules.</p>
+<p><strong>QLoRA:</strong> LoRA on a 4-bit quantized base model. Fine-tune 65B on one GPU.</p>
+<p><strong>Catastrophic forgetting:</strong> When fine-tuning on a new task degrades performance on previous tasks. LoRA mitigates by freezing the base.</p>
+<p><strong>Reward model:</strong> A model trained on human comparisons to predict which of two outputs humans prefer. Used as the objective function in RLHF's PPO stage.</p>
+<p><strong>Alignment:</strong> The process of making a model behave in accordance with human values and intentions. RLHF, DPO, and Constitutional AI are alignment techniques.</p>`,
+  keyPoints: [
+    "Pre-training (broad knowledge) → SFT (assistant format) → RLHF/DPO (alignment with preferences). Three stages to an assistant.",
+    "LoRA: freeze base, train small adapters. QLoRA: same but base is 4-bit quantized. Both prevent catastrophic forgetting.",
+    "DPO = simpler RLHF. No reward model needed. Directly trains on preferred/dispreferred pairs.",
+    "Alignment = making models behave as intended. The bridge between a text predictor and a helpful assistant."
+  ]
+},
+{
+  id: "kp_glossary_rag_agents",
+  title: "Glossary: RAG, Agents & Production Terms",
+  content: `<p><strong>RAG (Retrieval-Augmented Generation):</strong> Retrieve relevant documents, include them in the prompt, generate grounded answers. The standard pattern for knowledge-intensive LLM apps.</p>
+<p><strong>Chunking:</strong> Splitting documents into smaller pieces for indexing. Chunk size, overlap, and splitting strategy directly impact retrieval quality.</p>
+<p><strong>Vector database:</strong> Database optimized for storing and searching embedding vectors. Examples: FAISS, Pinecone, Chroma, pgvector, Weaviate.</p>
+<p><strong>Re-ranking:</strong> A second-stage retrieval step. Retrieve many candidates with fast vector search, then use a more accurate cross-encoder to re-score and reorder them.</p>
+<p><strong>Hybrid search:</strong> Combining semantic (vector) search with keyword (BM25) search. Captures both meaning-based and exact-match results.</p>
+<p><strong>Agent:</strong> An LLM in an autonomous loop: observe → think → act → observe result → repeat. Has access to tools.</p>
+<p><strong>Function calling / Tool use:</strong> The mechanism by which an LLM outputs structured tool invocations rather than text. The system executes the tool and returns results.</p>
+<p><strong>MCP (Model Context Protocol):</strong> Universal standard for connecting LLM apps to tools. Build once, use with any MCP host. (Anthropic)</p>
+<p><strong>A2A (Agent2Agent):</strong> Protocol for agents communicating with each other. Agent cards, tasks, artifacts. (Google)</p>
+<p><strong>Guardrails:</strong> Input/output filters that enforce safety, format, and policy compliance around the LLM.</p>
+<p><strong>Prompt caching:</strong> API-level caching of repeated prompt prefixes. Reduces cost and latency for stable system prompts.</p>
+<p><strong>Hallucination:</strong> When an LLM generates factually incorrect, unsupported, or fabricated information but presents it confidently.</p>
+<p><strong>Faithfulness:</strong> Whether the model's output is supported by the provided context (in RAG). High faithfulness = no hallucination beyond context.</p>`,
+  keyPoints: [
+    "RAG = retrieve + generate. Agent = autonomous loop + tools. Both are application-layer patterns, not model modifications.",
+    "Vector DB stores embeddings for fast similarity search. Re-ranking adds precision after fast recall.",
+    "MCP = agent↔tool standard (Anthropic). A2A = agent↔agent standard (Google). Complementary protocols.",
+    "Hallucination = fabricated info. Faithfulness = grounding in context. Guardrails = enforcement layer."
+  ]
+},
+{
+  id: "kp_glossary_infra",
+  title: "Glossary: Infrastructure & Optimization Terms",
+  content: `<p><strong>Quantization:</strong> Reducing model precision (FP16→INT8→INT4) to shrink size and speed up inference. Quality degrades slightly.</p>
+<p><strong>GPTQ:</strong> GPU-optimized post-training quantization. Good for GPU inference.</p>
+<p><strong>AWQ:</strong> Activation-Aware quantization. Preserves important weight channels. Often slightly better quality than GPTQ.</p>
+<p><strong>GGUF:</strong> File format for llama.cpp. Optimized for CPU inference with various quantization levels.</p>
+<p><strong>KV-cache:</strong> Cached Key/Value vectors from previous tokens during generation. Avoids recomputing attention for past tokens. Grows with sequence length.</p>
+<p><strong>Flash Attention:</strong> Hardware-aware exact attention algorithm. Computes in fast SRAM tiles instead of materializing full N×N matrix in slow HBM. 2-4× speedup.</p>
+<p><strong>PagedAttention (vLLM):</strong> Manages KV-cache like OS virtual memory pages. Eliminates fragmentation from pre-allocation. ~2× more concurrent requests.</p>
+<p><strong>Continuous batching:</strong> Dynamically adding new requests to a running batch as others complete. GPU never idles on finished requests.</p>
+<p><strong>Speculative decoding:</strong> Small draft model proposes tokens, large model verifies in parallel. 2-3× speedup, identical output quality.</p>
+<p><strong>Tensor parallelism:</strong> Splitting individual layer computations across GPUs within a node.</p>
+<p><strong>Pipeline parallelism:</strong> Placing different model layers on different GPUs across nodes.</p>
+<p><strong>Mixed precision:</strong> Computing in FP16/BF16 for speed while maintaining FP32 master weights for accuracy. BF16 preferred (same range as FP32).</p>
+<p><strong>vLLM:</strong> Production LLM serving engine with PagedAttention + continuous batching. The default for GPU serving.</p>
+<p><strong>Ollama:</strong> Simple local model serving. Pull and run models like Docker images. Dev/personal use.</p>
+<p><strong>llama.cpp:</strong> CPU inference engine using GGUF format. Edge/mobile deployment.</p>`,
+  keyPoints: [
+    "Quantization: FP16 (2B/param) → INT8 (1B) → INT4 (0.5B). GPTQ=GPU, GGUF=CPU, AWQ=activation-aware.",
+    "KV-cache = stored past tokens' K/V. Flash Attention = tiled computation in SRAM. PagedAttention = page-based KV management.",
+    "Serving stack: vLLM (production GPU), Ollama (local dev), llama.cpp (CPU/edge). Choose by use case.",
+    "Speculative decoding: small model drafts, big model verifies in parallel. 2-3× faster, zero quality loss."
+  ]
 }
 ];
