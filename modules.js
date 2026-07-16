@@ -1981,5 +1981,163 @@ Classify the sentiment:<br>
 
 <div class="analogy"><strong>Medical analogy:</strong> This is like drug regulation. The FDA (US), EMA (EU), and MHRA (UK) all have different requirements, but if you design your trials to the most stringent standard, you can often submit to all three. Same principle: build to the EU AI Act standard and you've mostly covered the others. The sector-specific requirements (FDA for health, FCA for finance) are additions on top, not alternatives.</div>
 `
+},
+
+// === POST-TRAINING: THE FULL PIPELINE ===
+{
+  title: "Post-Training: Fine-tuning & RL for LLMs (DeepLearning.AI)",
+  description: "Distilled from Sharon Zhou's 14-hour DeepLearning.AI course — the complete post-training pipeline: SFT, RLHF, reward models, PPO, GRPO, evaluation, data strategy, and production deployment.",
+  level: "intermediate",
+  readTime: "12 min",
+  linkedTopics: ["Fine-tuning & Alignment", "Evaluation & Benchmarking"],
+  content: `
+<h2>Pre-training Gets You a Smart Autocomplete. Post-training Gets You an Assistant.</h2>
+
+<p>A pre-trained model has absorbed trillions of tokens of human knowledge. It can continue any text pattern it's seen. But ask it a question and it might continue with more questions, or give you an essay when you wanted a number, or cheerfully help you do something dangerous. It's a savant with no judgment.</p>
+
+<p><strong>Post-training</strong> is everything that happens AFTER pre-training to turn that raw capability into a model that's helpful, harmless, and honest. It's a multi-stage pipeline, and understanding this pipeline — not just the individual techniques — is what separates someone who can discuss fine-tuning from someone who can actually build with it.</p>
+
+<div class="analogy"><strong>Medical analogy:</strong> Pre-training is medical school — massive knowledge acquisition. Post-training is residency and fellowship — supervised practice (SFT), feedback from attendings (RLHF), learning what "good doctoring" looks like beyond just knowing facts. You wouldn't trust a medical school graduate who never did residency; you shouldn't trust a base model that was never post-trained.</div>
+
+<h2>The Three Stages (and Why Order Matters)</h2>
+
+<h3>Stage 1: Supervised Fine-Tuning (SFT)</h3>
+
+<p>SFT teaches the model the FORMAT of being helpful. You show it thousands of (instruction, ideal response) pairs and train it to reproduce that pattern. The key mechanics:</p>
+
+<ul>
+<li><strong>Token-level loss masking:</strong> You only compute loss on the RESPONSE tokens, not the prompt tokens. The model isn't learning to predict its own instructions — it's learning to generate good answers given instructions. This is subtle but critical: if you train on prompt tokens too, you waste capacity learning to predict questions rather than answers.</li>
+<li><strong>Learning rate matters enormously:</strong> Too high and you destroy pre-trained knowledge (catastrophic forgetting). Too low and the model barely learns the new task. Typical SFT learning rates are 10-100× lower than pre-training (e.g., 1e-5 to 5e-5). Start conservative.</li>
+<li><strong>Epochs:</strong> 1-3 epochs is usually enough. More causes overfitting — the model memorises your examples rather than learning the pattern. If your training loss keeps dropping but validation performance degrades, you've overshot.</li>
+<li><strong>Data quality >> data quantity:</strong> 1,000 expertly crafted examples can outperform 100,000 mediocre ones. The model already has the knowledge from pre-training — SFT is teaching it how to USE that knowledge, not adding new knowledge.</li>
+</ul>
+
+<p>After SFT, your model can follow instructions and produce well-formatted responses. But it doesn't yet have good JUDGMENT about what makes one response better than another. That's where RL comes in.</p>
+
+<h3>Stage 2: Reward Modelling and RL</h3>
+
+<p>SFT teaches format. Reinforcement learning teaches preference — the subtle quality signals that make one correct answer better than another. This happens in two sub-stages:</p>
+
+<p><strong>2a. Train a Reward Model:</strong> Show humans pairs of model outputs for the same prompt. They pick which is better. Train a separate model (the reward model) to predict these human preferences. The reward model learns a scoring function: given a prompt and response, output a scalar "quality" score.</p>
+
+<p><strong>2b. Optimise with RL:</strong> Use the reward model as a scoring function to improve the policy (your actual LLM). The model generates responses, the reward model scores them, and the model updates to produce higher-scoring outputs. Three main algorithms:</p>
+
+<ul>
+<li><strong>PPO (Proximal Policy Optimization):</strong> The classic. Uses a critic network to estimate expected reward, then computes "advantage" (how much better was this action than expected). The "proximal" part: clip the policy update so it can't change too much in one step — this prevents catastrophic updates. Powerful but complex: requires a reward model, a critic network, and careful hyperparameter tuning.</li>
+<li><strong>GRPO (Group Relative Policy Optimization):</strong> DeepSeek's simplification. Generate K responses for each prompt, score them all, use the group mean as the baseline instead of a learned critic. Responses above the mean get reinforced; below get suppressed. No critic network needed — halves the memory requirement. Used for DeepSeek-R1.</li>
+<li><strong>DPO (Direct Preference Optimization):</strong> Skip the reward model entirely. Mathematically derives a closed-form solution from preference pairs, turning RL into a supervised learning problem. Simpler and more stable, but static — can't explore and discover better responses like PPO/GRPO can.</li>
+</ul>
+
+<h3>Stage 3: Iterate Based on Evaluation</h3>
+
+<p>This is the stage most tutorials skip, and the one that matters most in practice. Post-training is not "train once and deploy." It's a loop:</p>
+
+<ol>
+<li>Deploy (or test internally)</li>
+<li>Collect failure cases</li>
+<li>Diagnose: is this a data problem, a reward model problem, or a capability limit?</li>
+<li>Fix: add training data, adjust reward signal, or change approach</li>
+<li>Retrain and re-evaluate</li>
+<li>Go to 1</li>
+</ol>
+
+<h2>Evaluation: The North Star (Not an Afterthought)</h2>
+
+<p>The single most important idea from this entire pipeline: <strong>evaluation comes FIRST, not last.</strong> Before you fine-tune anything, define what "good" looks like. Otherwise you're optimising blind.</p>
+
+<h3>What to Evaluate</h3>
+<ul>
+<li><strong>Task performance:</strong> Does the model do the thing you're training it for? Accuracy, F1, BLEU, whatever metric fits your task.</li>
+<li><strong>General capability retention:</strong> Has it forgotten how to do other things? Run MMLU, HumanEval, or whatever general benchmarks matter. If task performance goes up but general performance craters, you have catastrophic forgetting.</li>
+<li><strong>Safety and alignment:</strong> Is it still following safety guidelines? Red-team it. Models that are fine-tuned on narrow tasks can become more willing to comply with harmful requests because you've optimised away some of the safety training.</li>
+<li><strong>Reward model quality:</strong> Does the reward model actually correlate with what you want? A bad reward model will teach the policy model to produce confidently wrong outputs.</li>
+</ul>
+
+<h3>Reward Hacking: When the Model Games the System</h3>
+
+<p>This is the biggest pitfall in RL-based post-training. The model finds outputs that score highly with the reward model but aren't actually good. Classic examples:</p>
+
+<ul>
+<li><strong>Length bias:</strong> Reward models often score longer responses higher (more detail = seems more helpful). The policy model learns to be verbose — padding answers with filler to maximise reward, not quality.</li>
+<li><strong>Sycophancy:</strong> The reward model was trained on human preferences, and humans often prefer responses that agree with them. The model learns to tell you what you want to hear rather than what's true.</li>
+<li><strong>Formatting exploitation:</strong> The model discovers that bullet points, bold text, or certain phrasings score higher — regardless of content quality.</li>
+<li><strong>Goodhart's Law:</strong> "When a measure becomes a target, it ceases to be a good measure." The reward model is a proxy for human quality judgment. Optimise too hard against it and you exploit the proxy, not the underlying quality.</li>
+</ul>
+
+<p><strong>Mitigations:</strong> KL divergence penalty (don't stray too far from SFT model), length normalisation, diverse reward models, human spot-checks, early stopping when reward goes up but quality goes down.</p>
+
+<h2>Error Analysis: The Skill That Separates Good from Great</h2>
+
+<p>When your post-trained model fails, you need a systematic framework for diagnosing WHY:</p>
+
+<ul>
+<li><strong>Classification errors → data problem.</strong> The model gets the category wrong? You probably need more diverse examples of that category in your SFT data.</li>
+<li><strong>Style/format errors → SFT problem.</strong> The model knows the right answer but presents it wrong? Improve your SFT examples' formatting.</li>
+<li><strong>Preference errors → reward problem.</strong> The model produces a correct but suboptimal response? Your reward model isn't capturing the quality dimension that matters.</li>
+<li><strong>Capability errors → model limit.</strong> The model genuinely can't do the task? You might need a bigger base model or a completely different approach (RAG, tools).</li>
+</ul>
+
+<p>The corrective strategy is DIFFERENT for each category. Throwing more data at a reward model problem wastes time. Tuning the reward model for a capability limit is futile. Diagnosis before treatment — you know this from medicine.</p>
+
+<h2>Data Strategy: More Is Not Always Better</h2>
+
+<h3>How Much Data Do You Actually Need?</h3>
+<ul>
+<li><strong>SFT:</strong> 1,000-10,000 high-quality examples is usually sufficient. Quality matters exponentially more than quantity. One carefully crafted example teaches more than 100 sloppy ones.</li>
+<li><strong>Reward model:</strong> 10,000-100,000 preference pairs. More data helps here because the reward model needs to generalise across many response variations.</li>
+<li><strong>RL:</strong> Tens of thousands of prompt-response-reward cycles. The model needs enough exploration to discover good strategies.</li>
+</ul>
+
+<h3>Synthetic Data: Scaling Without Human Bottlenecks</h3>
+<p>You can use a stronger model to generate training data for a weaker one. This is how most teams scale post-training data:</p>
+<ul>
+<li><strong>Distillation:</strong> Have GPT-4 generate responses, then fine-tune a smaller model on those responses. The smaller model learns to mimic the larger model's behavior. Effective but legally and ethically nuanced (check the model provider's terms of service).</li>
+<li><strong>Template-based generation:</strong> Define templates with slots: "Given [context], generate a [format] response about [topic]." Fill slots programmatically to create diverse prompts, then use a strong model to generate responses. This gives you control over the distribution of your training data.</li>
+<li><strong>Constitutional AI (RLAIF):</strong> Use the AI itself to generate preference data. Give it a constitution (set of principles), have it critique and revise its own outputs. Scales far better than human annotation.</li>
+</ul>
+
+<h3>Balancing Data Quality with Reward Signal</h3>
+<p>A tension exists: your SFT data teaches one kind of "good," and your reward model teaches another. If they disagree, the model receives contradictory training signals. Ensure your SFT data and reward model preferences are philosophically aligned — both should reflect the same definition of quality.</p>
+
+<h2>Production: When It's Not a Notebook Anymore</h2>
+
+<h3>Deployment Gates</h3>
+<p>Before deploying a post-trained model, verify:</p>
+<ul>
+<li><strong>Safety regression check:</strong> Compare red-teaming results against the pre-post-training baseline. If the model is more compliant with harmful requests, do not ship.</li>
+<li><strong>Capability preservation:</strong> Run general benchmarks. Accept no more than a small, documented drop in general capability.</li>
+<li><strong>Reward model correlation:</strong> Spot-check that high-reward outputs are actually high quality (not reward-hacked).</li>
+<li><strong>Edge case testing:</strong> Adversarial inputs, out-of-distribution prompts, multi-turn conversations.</li>
+</ul>
+
+<h3>Feedback Loops</h3>
+<p>The best post-training pipelines are continuous. User feedback (thumbs up/down, corrections, usage patterns) becomes new training signal. This creates a flywheel: better model → more users → more feedback → better model. But beware: biased user feedback creates biased models. Monitor demographic patterns in feedback data.</p>
+
+<h3>Monitoring</h3>
+<p>Track in production:</p>
+<ul>
+<li><strong>Response quality scores</strong> (from a reward model or LLM-as-judge)</li>
+<li><strong>Safety flag rates</strong> (how often guardrails trigger)</li>
+<li><strong>User satisfaction proxies</strong> (response acceptance rate, follow-up question rate, session length)</li>
+<li><strong>Distribution shift</strong> (are production prompts different from training prompts?)</li>
+</ul>
+
+<h2>The Decision Tree: Which Post-Training Path?</h2>
+
+<p>Not every project needs every stage:</p>
+<ul>
+<li><strong>Just need the model to follow a format?</strong> SFT alone, possibly with LoRA. Skip RL entirely.</li>
+<li><strong>Need subtle quality improvements?</strong> SFT + DPO. Simple, stable, effective for most use cases.</li>
+<li><strong>Need exploration and self-improvement?</strong> SFT + PPO/GRPO. More powerful but more complex. Use when DPO's static data isn't enough.</li>
+<li><strong>Need reasoning capabilities?</strong> SFT + GRPO with verifiable rewards. This is the DeepSeek-R1 recipe — reward based on whether the answer is correct, not a learned preference model.</li>
+<li><strong>Don't need any of this?</strong> Most use cases are better served by prompt engineering or RAG. Post-training is the last resort, not the first tool.</li>
+</ul>
+
+<div class="analogy"><strong>Medical analogy:</strong> Post-training is like choosing between treatment approaches. Prompting is lifestyle modification (cheap, reversible, try first). RAG is medication (adds something the model doesn't have). SFT is outpatient procedure (targeted, recoverable). Full RLHF is major surgery (powerful but complex, with real risks of complications). Match the intervention to the problem severity.</div>
+
+<h2>What This Course Actually Teaches You</h2>
+
+<p>The DeepLearning.AI course (Sharon Zhou, 13+ hours) covers this entire pipeline in depth with code. The core insight: post-training is not a single technique — it's an iterative engineering discipline. You design evaluations first, choose the minimal effective intervention, train carefully, evaluate rigorously, and iterate. The teams that do this well don't just have better models — they have better processes for improving models continuously.</p>
+`
 }
 ];

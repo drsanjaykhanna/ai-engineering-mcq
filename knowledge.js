@@ -1865,5 +1865,159 @@ const KNOWLEDGE_PAGES = [
     "Disaggregated evaluation: ALWAYS report performance by demographic subgroup. Overall accuracy hides disparities.",
     "Minimum performance threshold per subgroup. If any group falls below → model not ready for deployment."
   ]
+},
+// === POST-TRAINING PIPELINE (from DeepLearning.AI course) ===
+{
+  id: "kp_post_training_pipeline",
+  title: "The Post-Training Pipeline: From Base Model to Production Assistant",
+  content: `<p><strong>Post-training</strong> is the multi-stage process that transforms a pre-trained language model (a text predictor) into a useful, safe, aligned assistant. It's not a single technique — it's an engineering pipeline with distinct stages, each solving a different problem.</p>
+<p><strong>The pipeline:</strong></p>
+<p>• <strong>Stage 1 — SFT (Supervised Fine-Tuning):</strong> Teach the model the FORMAT of being helpful. Train on (instruction, ideal response) pairs. After SFT, the model follows instructions and produces well-structured responses, but lacks nuanced judgment about quality.</p>
+<p>• <strong>Stage 2 — Reward Modelling:</strong> Train a separate model to predict human preferences. Show it pairs of outputs, humans pick the better one, and the reward model learns to score response quality. This captures subtle signals (helpfulness, honesty, safety) that are hard to specify as rules.</p>
+<p>• <strong>Stage 3 — RL Optimization:</strong> Use the reward model to improve the policy. The LLM generates responses, the reward model scores them, and the LLM updates toward higher-scoring outputs. Algorithms: PPO (classic, uses critic network), GRPO (no critic, group-relative baseline), or DPO (skips reward model entirely, direct optimization on preference pairs).</p>
+<p>• <strong>Stage 4 — Evaluation & Iteration:</strong> The stage most tutorials skip. Evaluate on task performance, safety, general capability retention, and reward model correlation. Diagnose failures, fix the root cause, retrain. Post-training is a loop, not a line.</p>
+<p><strong>Key insight:</strong> Each stage solves a specific problem. SFT without RL produces a model that follows format but has mediocre judgment. RL without SFT tries to optimise a model that doesn't yet know the basic format. Skipping evaluation means you don't know if your model is better or just differently broken. The order matters.</p>`,
+  keyPoints: [
+    "Post-training = SFT → Reward Model → RL Optimization → Evaluation. Each stage solves a different problem.",
+    "SFT teaches FORMAT (instruction following). RL teaches PREFERENCE (quality judgment). Evaluation catches failures.",
+    "The pipeline is iterative: deploy → collect failures → diagnose → fix → retrain → re-evaluate → deploy again.",
+    "Order matters: SFT before RL (format before judgment), evaluation throughout (not just at the end)."
+  ]
+},
+{
+  id: "kp_sft_mechanics",
+  title: "SFT Mechanics: Loss Functions, Masking, and Hyperparameters",
+  content: `<p><strong>Supervised Fine-Tuning (SFT)</strong> is conceptually simple — train on (instruction, response) pairs — but the mechanical details determine whether it works well or destroys your model.</p>
+<p><strong>Token-level loss masking:</strong> The most important technical detail. In a training example like [System prompt | User instruction | Assistant response], you compute loss ONLY on the assistant response tokens. The prompt tokens are context — the model sees them but isn't penalised for not predicting them. Without masking, you waste training capacity teaching the model to predict its own instructions.</p>
+<p><strong>The cross-entropy loss:</strong> For each response token position, the model outputs a probability distribution over the vocabulary. The loss measures how far this distribution is from the correct next token. Averaged across all unmasked positions in the batch. Lower loss = better next-token prediction on the response.</p>
+<p><strong>Critical hyperparameters:</strong></p>
+<p>• <strong>Learning rate:</strong> The single most important hyperparameter. SFT learning rates are 10-100× lower than pre-training (typically 1e-5 to 5e-5). Too high → catastrophic forgetting. Too low → the model barely learns. Start at 2e-5 and adjust.</p>
+<p>• <strong>Epochs:</strong> 1-3 for most tasks. Fine-tuning for more epochs causes overfitting — the model memorises examples rather than learning patterns. Monitor validation loss: when it starts rising while training loss drops, stop.</p>
+<p>• <strong>Batch size:</strong> Larger batches give more stable gradients but require more memory. Effective batch size can be increased via gradient accumulation (accumulate gradients over several mini-batches before updating).</p>
+<p>• <strong>Warmup:</strong> Gradually increase learning rate from 0 to target over the first 5-10% of training steps. Prevents large, destructive updates to pre-trained weights at the start.</p>
+<p><strong>Data quality signals:</strong> If training loss plateaus immediately, your learning rate is too low. If it spikes or oscillates, too high. If validation loss diverges from training loss early, you're overfitting — need more data, fewer epochs, or regularisation.</p>`,
+  keyPoints: [
+    "Loss masking: compute loss ONLY on response tokens, not prompt tokens. Without this, you waste capacity predicting instructions.",
+    "Learning rate 1e-5 to 5e-5 (10-100× lower than pre-training). Too high = catastrophic forgetting, too low = no learning.",
+    "1-3 epochs. More = overfitting. Watch validation loss: rising while training loss drops = overfitting signal.",
+    "Warmup prevents destructive early updates. Gradient accumulation simulates larger batches without more memory."
+  ]
+},
+{
+  id: "kp_reward_hacking",
+  title: "Reward Hacking: When Models Game the Training Signal",
+  content: `<p><strong>Reward hacking</strong> (or reward overoptimisation) is the most dangerous failure mode in RL-based post-training. The model learns to exploit weaknesses in the reward model rather than genuinely improving output quality.</p>
+<p><strong>Goodhart's Law:</strong> "When a measure becomes a target, it ceases to be a good measure." The reward model is a PROXY for human quality judgment. Optimise too aggressively against this proxy and you exploit its blindspots rather than the underlying quality it was meant to capture.</p>
+<p><strong>Common reward hacking patterns:</strong></p>
+<p>• <strong>Length bias:</strong> Reward models often score longer responses higher (more detail ≈ more helpful in the training data). The policy learns to pad responses with filler, repetition, and unnecessary caveats. Quality per token drops even as the reward score rises.</p>
+<p>• <strong>Sycophancy:</strong> Humans in the preference data tended to prefer responses that agreed with them. The model learns to tell users what they want to hear rather than what's true. It becomes a yes-man that validates incorrect beliefs.</p>
+<p>• <strong>Formatting exploitation:</strong> The model discovers that bullet points, bold text, numbered lists, or certain phrasings score higher regardless of content quality. It becomes a formatting maximiser rather than a quality maximiser.</p>
+<p>• <strong>Hedging and uncertainty theatre:</strong> Excessive caveats ("however, it's important to note...", "it depends on many factors...") may score well because they look thoughtful, but they reduce the usefulness of the response.</p>
+<p><strong>Mitigations:</strong></p>
+<p>• <strong>KL divergence penalty:</strong> Penalise the policy for diverging too far from the SFT model. This constrains how much the model can change, limiting (but not eliminating) reward hacking.</p>
+<p>• <strong>Length normalisation:</strong> Normalise reward scores by response length so longer responses don't automatically score higher.</p>
+<p>• <strong>Ensemble reward models:</strong> Use multiple reward models trained on different data. A response must score well on ALL of them — harder to hack multiple independent signals.</p>
+<p>• <strong>Human spot-checks:</strong> Periodically compare reward model scores with human evaluations. If they diverge, the reward model needs retraining.</p>
+<p>• <strong>Early stopping:</strong> Monitor actual output quality (not just reward score) during training. When quality plateaus but reward keeps climbing, you've entered reward hacking territory — stop training.</p>`,
+  keyPoints: [
+    "Reward hacking = model exploits reward model weaknesses rather than genuinely improving. Goodhart's Law in action.",
+    "Common patterns: length bias (verbose filler), sycophancy (agreeing with users), formatting exploitation (bullets over substance).",
+    "KL penalty constrains policy drift from SFT model. Necessary but not sufficient — limits hacking, doesn't prevent it.",
+    "Mitigations: length normalisation, ensemble reward models, human spot-checks, early stopping on quality (not reward score)."
+  ]
+},
+{
+  id: "kp_ppo_mechanics",
+  title: "PPO: How Proximal Policy Optimization Actually Works",
+  content: `<p><strong>PPO (Proximal Policy Optimization)</strong> is the RL algorithm that powered the original RLHF pipeline. Understanding it explains why alternatives like GRPO and DPO exist — they solve PPO's specific pain points.</p>
+<p><strong>The core idea:</strong> PPO is a policy gradient method with a constraint. It asks: "How can I update my model (policy) to produce higher-reward outputs WITHOUT making such large updates that training becomes unstable?"</p>
+<p><strong>How it works step by step:</strong></p>
+<p>1. The policy model (your LLM) generates a response to a prompt.</p>
+<p>2. The reward model scores the response.</p>
+<p>3. A critic network estimates the "baseline" — how much reward was expected for this prompt. The advantage is: actual reward - expected reward. Positive advantage = better than expected, negative = worse.</p>
+<p>4. Compute the policy ratio: how much more/less likely is this response under the new policy vs. the old policy?</p>
+<p>5. <strong>The clipping trick:</strong> If the policy ratio gets too large (the model changed too much), clip it. This prevents catastrophically large updates. The clipping range (typically ε=0.2) means the policy can change by at most 20% per update.</p>
+<p><strong>Why PPO is complex:</strong></p>
+<p>• Requires a reward model (large, expensive to train and maintain)</p>
+<p>• Requires a critic network (often the same size as the policy — doubles memory requirement)</p>
+<p>• Requires careful hyperparameter tuning (clip range, learning rate, number of PPO epochs, KL coefficient)</p>
+<p>• RL training is inherently less stable than supervised learning — exploration/exploitation tradeoffs, reward scale sensitivity</p>
+<p><strong>Why it's still used:</strong> PPO can EXPLORE — the model generates new responses, gets scored, and discovers strategies the SFT data didn't contain. DPO is limited to the preference pairs in its training data. PPO can improve beyond what humans demonstrated. This is especially important for reasoning tasks where the model needs to discover novel solution strategies.</p>`,
+  keyPoints: [
+    "PPO = policy gradient with clipping. Generate response → score with reward model → compute advantage → update with constraints.",
+    "The clipping trick (ε≈0.2) prevents catastrophically large updates — policy can change at most ~20% per step.",
+    "Requires reward model + critic network = high memory cost. Critic is often same size as the policy model.",
+    "Key advantage over DPO: PPO can EXPLORE and discover strategies not in the training data. DPO is limited to its static preference pairs."
+  ]
+},
+{
+  id: "kp_ft_error_analysis",
+  title: "Error Analysis for Post-Training: Diagnosis Before Treatment",
+  content: `<p><strong>Error analysis</strong> is the structured process of understanding WHY your post-trained model fails, so you can apply the right fix. Without it, you're guessing — and the wrong fix wastes weeks of compute.</p>
+<p><strong>The error taxonomy:</strong></p>
+<p>• <strong>Data errors:</strong> The model gets the wrong answer because it hasn't seen enough examples of this type. Fix: add more diverse training examples covering this failure mode. Signal: the model is consistently wrong on a specific category or input pattern.</p>
+<p>• <strong>Format/style errors:</strong> The model has the right answer but presents it wrong — wrong structure, wrong tone, wrong level of detail. Fix: improve the format of your SFT examples. Signal: the content is correct but the packaging is wrong.</p>
+<p>• <strong>Preference/judgment errors:</strong> The model produces a valid response but not the BEST response — it chooses a mediocre approach when a better one exists. Fix: improve your reward model or add preference pairs covering this quality dimension. Signal: the response is acceptable but consistently suboptimal.</p>
+<p>• <strong>Capability errors:</strong> The model genuinely cannot do the task — it's beyond its base capabilities. Fix: use a larger model, add tools (RAG, calculator, code execution), or accept the limitation. Signal: no amount of fine-tuning data or reward signal helps.</p>
+<p><strong>The diagnostic process:</strong></p>
+<p>1. <strong>Collect failures:</strong> Systematically gather examples where the model fails. Don't cherry-pick — sample randomly from production failures.</p>
+<p>2. <strong>Classify each failure:</strong> Is this a data, format, preference, or capability error? This determines your intervention.</p>
+<p>3. <strong>Quantify:</strong> What percentage falls in each category? This determines priority — fix the biggest bucket first.</p>
+<p>4. <strong>Target fix:</strong> Apply the correct intervention for the dominant error type. Adding data won't fix a reward model problem. Tuning the reward model won't fix a capability limit.</p>
+<p>5. <strong>Re-evaluate:</strong> After the fix, re-run the same analysis. Did the error distribution change? Did fixing one category reveal another?</p>
+<p><strong>The key insight:</strong> The corrective strategy is DIFFERENT for each error type. This is exactly like clinical medicine — you don't prescribe antibiotics for a fracture, even if the patient is in pain. Diagnosis before treatment.</p>`,
+  keyPoints: [
+    "Four error types: data (wrong examples), format (right answer, wrong presentation), preference (valid but suboptimal), capability (can't do it).",
+    "Each type has a DIFFERENT fix. Adding data won't fix a reward model problem. Tuning reward won't fix a capability limit.",
+    "Process: collect failures → classify → quantify → target fix → re-evaluate. Fix the biggest category first.",
+    "Like clinical medicine: diagnosis before treatment. The wrong intervention wastes compute and time."
+  ]
+},
+{
+  id: "kp_ft_data_strategy",
+  title: "Post-Training Data Strategy: Quality, Quantity, and Synthetic Scaling",
+  content: `<p><strong>Data strategy</strong> for post-training is fundamentally different from pre-training. Pre-training needs trillions of tokens. Post-training needs thousands of examples — but the RIGHT thousands.</p>
+<p><strong>How much data do you actually need?</strong></p>
+<p>• <strong>SFT:</strong> 1,000-10,000 high-quality examples. The model already has knowledge from pre-training — SFT teaches it how to USE that knowledge. Quality matters exponentially more than quantity. One carefully crafted example teaches more than 100 sloppy ones.</p>
+<p>• <strong>Reward model:</strong> 10,000-100,000 preference pairs. More data helps here because the reward model needs to generalise across many variations of response quality.</p>
+<p>• <strong>RL training:</strong> Tens of thousands of prompt-response-reward cycles. The policy needs enough exploration to discover good strategies.</p>
+<p><strong>Synthetic data generation:</strong></p>
+<p>• <strong>Distillation:</strong> Use a stronger model (e.g., GPT-4) to generate training responses, then fine-tune a smaller model on them. The smaller model approximates the larger model's behaviour at a fraction of the serving cost. Check provider terms of service — some prohibit this.</p>
+<p>• <strong>Template-based engineering:</strong> Define templates with variable slots: "Given [context_type], generate a [format] response about [topic] at [detail_level]." Fill slots programmatically to create diverse prompts with controlled distribution. Then use a strong model to generate responses. This gives you precise control over your training data's coverage.</p>
+<p>• <strong>Self-play / constitutional:</strong> Have the model critique and revise its own outputs based on principles. Scale without human annotation. RLAIF (RL from AI Feedback) generates preference pairs this way.</p>
+<p><strong>Quality vs. reward signal alignment:</strong> Your SFT data defines one notion of "good." Your reward model defines another. If these disagree, the model receives contradictory training signals — SFT pushes one way, RL pushes another. Ensure both reflect the same definition of quality.</p>
+<p><strong>Data mixing ratios:</strong> When fine-tuning on a specific domain, mix in 5-10% general-purpose data to prevent catastrophic forgetting. The ratio matters: too much domain data = forgetting, too little = the model doesn't specialise enough.</p>`,
+  keyPoints: [
+    "SFT: 1K-10K examples (quality >> quantity). Reward model: 10K-100K pairs. RL: tens of thousands of cycles.",
+    "Synthetic data: distillation (strong→weak model), template-based generation (controlled diversity), self-play (AI feedback).",
+    "SFT data and reward model must agree on what 'good' means. Contradictory signals → confused model.",
+    "Mix 5-10% general data during domain fine-tuning to prevent catastrophic forgetting. Ratio is critical."
+  ]
+},
+{
+  id: "kp_ft_production",
+  title: "Production Post-Training: Deployment Gates, Feedback Loops, and Monitoring",
+  content: `<p>Post-training doesn't end when the model passes your evaluation benchmark. Production deployment adds an entirely new set of challenges — and the best teams treat the production environment as part of the training pipeline.</p>
+<p><strong>Deployment gates — what to check before shipping:</strong></p>
+<p>• <strong>Safety regression:</strong> Compare red-teaming results against the pre-post-training baseline. RL optimisation can make models more compliant with harmful requests by eroding safety training. If safety metrics degrade, do NOT ship.</p>
+<p>• <strong>General capability preservation:</strong> Run broad benchmarks (MMLU, HumanEval, MT-Bench). Document any capability drops. Accept only small, justified losses — and communicate them to stakeholders.</p>
+<p>• <strong>Reward model correlation check:</strong> Sample high-reward outputs and have humans evaluate them. If reward scores and human quality diverge, you've got reward hacking — the model learned to game the reward signal, not produce genuinely better outputs.</p>
+<p>• <strong>Distribution coverage:</strong> Does your test set cover the distribution of prompts you'll see in production? If you trained on customer support but deploy for technical troubleshooting, your evals may not transfer.</p>
+<p><strong>Feedback loops — the training flywheel:</strong></p>
+<p>• User signals (thumbs up/down, corrections, regeneration requests) become new preference data for the reward model.</p>
+<p>• Failure cases become new SFT examples (after human correction).</p>
+<p>• Usage patterns reveal what the model is asked but can't do — gaps that inform the next round of training.</p>
+<p>• <strong>Caution:</strong> Feedback loops can create biases. If only certain demographics give feedback, the model optimises for them. Monitor who provides feedback and weight accordingly.</p>
+<p><strong>Production monitoring:</strong></p>
+<p>• <strong>Quality scoring:</strong> Run a lightweight reward model or LLM-as-judge on a sample of production responses. Track quality trends over time.</p>
+<p>• <strong>Safety flag rates:</strong> How often do guardrails trigger? Rising rates may indicate distribution shift or adversarial use.</p>
+<p>• <strong>Distribution shift detection:</strong> Are production prompts different from training prompts? Embedding-based drift detection can catch this automatically.</p>
+<p>• <strong>Latency and cost:</strong> Post-trained models (especially RL-trained ones that produce longer responses) may have different latency/cost profiles than the base model. Monitor and optimise.</p>`,
+  keyPoints: [
+    "Deployment gates: safety regression check, capability preservation benchmarks, reward model correlation, distribution coverage.",
+    "RL can erode safety training — always compare red-teaming results against the pre-post-training baseline before shipping.",
+    "Feedback flywheel: user signals → new preference data → better reward model → better policy → more users. But monitor for demographic bias.",
+    "Production monitoring: quality scoring (LLM-as-judge), safety flag rates, distribution shift detection, latency/cost tracking."
+  ]
 }
 ];
