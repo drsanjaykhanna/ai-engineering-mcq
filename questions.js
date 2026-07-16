@@ -3899,5 +3899,175 @@ const QUESTIONS = [
     "Correct. OpenAI's terms of service explicitly prohibit using GPT-4/ChatGPT outputs to train competing models. Google, Anthropic, and others have similar restrictions. Even if not explicitly prohibited, there are ethical questions about using one company's model outputs as a shortcut to replicate their investment. Before distillation, CHECK the terms of service of the teacher model's provider. Open-source models (Llama, Mistral) generally permit this under their licenses, making them safer choices for distillation.",
     "Incorrect. Distillation works with any teacher model — you just need its outputs. The concern isn't technical feasibility but legal/ethical permissibility of using specific providers' outputs for training."
   ]
+},
+{
+  id: "ft40", topic: "Fine-tuning & Alignment", pageId: "kp_reward_model_training",
+  question: "How is a reward model for RLHF typically trained?",
+  options: [
+    "On absolute quality scores assigned by human experts on a 1-10 scale",
+    "On pairwise comparisons: humans see two responses and pick the better one, then a Bradley-Terry model learns to predict these preferences",
+    "On the same next-token prediction objective as the base LLM",
+    "By fine-tuning the base model on positive-only examples"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Absolute scoring is unreliable — different annotators have different scales. One person's 7 is another's 5. Pairwise comparisons ('which is better?') are much more consistent across annotators.",
+    "Correct. The reward model learns from COMPARATIVE judgments, not absolute scores. Annotators see two responses to the same prompt and pick the better one. The Bradley-Terry model converts these pairwise preferences into a scalar score function. This works because humans are much better at comparing two things than rating one thing on an absolute scale — inter-annotator agreement is significantly higher for comparisons.",
+    "Incorrect. The reward model doesn't predict the next token — it outputs a single scalar SCORE for an entire response. Different architecture (adds a scalar head), different training objective (preference prediction, not language modelling).",
+    "Incorrect. Using only positive examples wouldn't teach the model to distinguish quality levels. The reward model needs to see BOTH preferred and dispreferred responses to learn what makes one better than the other."
+  ]
+},
+{
+  id: "ft41", topic: "Fine-tuning & Alignment", pageId: "kp_reward_model_training",
+  question: "If human annotators agree on which response is better only 65% of the time for a given task, what does this imply for the reward model?",
+  options: [
+    "The reward model needs more training data to reach 100% accuracy",
+    "The reward model's ceiling is approximately 65% — it can't reliably learn preferences that humans themselves disagree on",
+    "The annotators should be replaced with better-trained experts",
+    "The task is too easy — harder tasks produce higher agreement"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. More data helps but can't overcome the fundamental ceiling. If the ground truth labels are noisy (humans disagree 35% of the time), no amount of data will produce a model that predicts preferences more accurately than humans themselves.",
+    "Correct. Inter-annotator agreement sets an upper bound on reward model quality. If humans agree 65% of the time, the preference signal is inherently noisy — for 35% of pairs, there's no consistent 'right answer.' The reward model trained on this data inherits this noise. Implications: (1) use agreement rate to set realistic expectations, (2) filter training data to high-agreement pairs for better signal, (3) accept that the reward model will be uncertain on subjective quality dimensions.",
+    "Incorrect. Low agreement often reflects genuine subjectivity in the task (e.g., 'which writing style is better?'), not annotator quality. Even expert annotators disagree on subjective preferences. Better annotators help, but some disagreement is inherent.",
+    "Incorrect. It's the opposite — harder, more subjective tasks produce LOWER agreement. Factual accuracy questions get near-100% agreement; writing quality or helpfulness questions get 60-75%."
+  ]
+},
+{
+  id: "ft42", topic: "Fine-tuning & Alignment", pageId: "kp_reasoning_posttraining",
+  question: "DeepSeek-R1 used GRPO with verifiable rewards for mathematics. Why are 'verifiable rewards' particularly powerful for reasoning tasks?",
+  options: [
+    "They're cheaper to compute than learned reward models",
+    "They provide a ground-truth signal — the answer is objectively right or wrong — eliminating reward model noise and enabling the model to discover novel reasoning strategies",
+    "They work only for math and can't be applied to other domains",
+    "They require less training data than preference-based approaches"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. While verifiable rewards don't require a separate reward model (cheaper in that sense), the key advantage isn't cost — it's signal quality. A learned reward model introduces noise; a verifiable reward is exact.",
+    "Correct. For math and code, correctness is binary and verifiable: the answer is right or wrong, the code passes tests or doesn't. This eliminates the noise and potential hacking of learned reward models. The model can explore freely — trying wild, novel reasoning strategies — and get clear feedback on whether they work. This is why DeepSeek-R1 developed emergent chain-of-thought: RL with verifiable rewards let it discover that 'thinking out loud' leads to more correct answers, without being explicitly taught this strategy.",
+    "Incorrect. Verifiable rewards work for any domain with checkable outputs: code (unit tests), math (correct answer), formal logic (provable), structured data extraction (schema validation). The principle extends beyond pure math.",
+    "Incorrect. Verifiable reward training actually needs MANY prompt-response cycles — the model explores extensively. The advantage is signal quality, not data efficiency."
+  ]
+},
+{
+  id: "ft43", topic: "Fine-tuning & Alignment", pageId: "kp_reasoning_posttraining",
+  question: "What is the difference between a Process Reward Model (PRM) and an Outcome Reward Model (ORM)?",
+  options: [
+    "PRM scores the final answer; ORM scores the process",
+    "PRM scores each reasoning step individually; ORM only scores whether the final answer is correct",
+    "PRM is faster; ORM is more accurate",
+    "PRM requires human annotation; ORM is fully automated"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. This is backwards. PRM = Process (scores steps). ORM = Outcome (scores the final result).",
+    "Correct. An ORM gives a single reward at the end: was the final answer right or wrong? A PRM provides feedback on each intermediate step: was this reasoning step valid? PRMs are more informative (the model learns WHERE it went wrong, not just THAT it went wrong) but much more expensive to train (you need step-level annotations). ORMs are simpler but give sparse signal — a correct final answer doesn't mean every step was valid (the model might have made compensating errors).",
+    "Incorrect. PRMs are more expensive computationally (score every step vs. one final check), not faster. Accuracy depends on the task and annotation quality, not inherently on the model type.",
+    "Incorrect. Both can be human-annotated or automated. ORMs are easier to automate (check final answer against ground truth). PRMs need step-level judgments, which are harder to automate but can use AI-generated annotations."
+  ]
+},
+{
+  id: "ft44", topic: "Fine-tuning & Alignment", pageId: "kp_rlaif_safety",
+  question: "What is the main advantage of RLAIF (RL from AI Feedback) over RLHF for safety alignment?",
+  options: [
+    "AI feedback is always more accurate than human feedback",
+    "AI feedback scales cheaply — generating millions of preference judgments against explicit principles, compared to expensive human annotation",
+    "RLAIF eliminates all safety risks from the model",
+    "RLAIF doesn't require any initial human data"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. AI feedback isn't necessarily more accurate — it can reinforce the model's own biases (echo chamber effect). The advantage is scale and consistency, not accuracy.",
+    "Correct. Human annotation is expensive ($1-10+ per comparison) and slow (weeks for thousands of pairs). RLAIF uses the AI model itself to judge responses against explicit constitutional principles — generating millions of comparisons at pennies per judgment. The principles are auditable (you can see exactly what the model was aligned to), and the judgments are consistent (no inter-annotator disagreement). For safety specifically, this means you can evaluate far more edge cases and attack patterns than human reviewers could cover.",
+    "Incorrect. No alignment technique eliminates all safety risks. RLAIF reduces the cost of scaling safety alignment but the model can still be manipulated, and AI-generated feedback can have systematic blindspots.",
+    "Incorrect. RLAIF still needs initial human-designed principles (the 'constitution'). These principles encode human values. The AI generates feedback BASED ON these human-written principles — it's not purely self-supervised."
+  ]
+},
+{
+  id: "ft45", topic: "Fine-tuning & Alignment", pageId: "kp_ft_evaluation_design",
+  question: "A team is about to start post-training a model. When should they design their evaluation suite?",
+  options: [
+    "After training is complete, to test the final model",
+    "During training, to monitor progress",
+    "BEFORE training begins — evaluation design should precede any training",
+    "It doesn't matter when — evaluations are just metrics to report"
+  ],
+  correct: 2,
+  explanation: [
+    "Incorrect. Designing evaluation after training means you trained blind — you had no way to know if you were making progress, overfitting, or causing regressions. You might discover fundamental problems only after spending weeks of compute.",
+    "Incorrect. Monitoring during training is necessary but insufficient. Without a pre-defined evaluation suite, you don't know WHAT to monitor. You need the target defined before you start optimising toward it.",
+    "Correct. This is the 'evaluation as the north star' principle. Define what 'good' looks like BEFORE training: what task metrics matter? What general capabilities must be preserved? What safety tests must pass? What's the minimum acceptable performance? This gives you: (1) a clear stopping criterion, (2) the ability to detect regressions during training, (3) a principled way to compare approaches. Without pre-defined evaluation, you're optimising an unknown objective.",
+    "Incorrect. Evaluations aren't just reporting metrics — they DRIVE training decisions. When to stop, what to fix, whether to ship. Treating them as an afterthought leads to shipping models you can't characterise."
+  ]
+},
+{
+  id: "ft46", topic: "Fine-tuning & Alignment", pageId: "kp_ft_hyperparameter_guide",
+  question: "You're fine-tuning with LoRA and need to choose the rank (r). What's a practical starting point?",
+  options: [
+    "r=1 (minimum rank for fastest training)",
+    "r=8 to r=32 as a starting point, increase if task performance is insufficient",
+    "r=1024 (maximum rank to capture the most information)",
+    "r should equal the model's hidden dimension for full expressiveness"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. r=1 is too constrained for most tasks — the adapter can only learn a rank-1 update, which is unlikely to capture the complexity of real task-specific behaviour. You'd need extremely simple tasks for this to work.",
+    "Correct. LoRA rank 8-32 is the practical sweet spot for most fine-tuning tasks. Lower ranks (4-8) work for simpler tasks like style transfer. Higher ranks (32-64) for complex domain adaptation. The alpha parameter (scaling factor) is typically set to 2× the rank as a starting point. Start at r=16, evaluate, and adjust: if performance plateaus, try r=32. If r=8 matches r=16 performance, use r=8 for efficiency. Higher rank = more parameters = more memory + slower training.",
+    "Incorrect. r=1024 would approach full fine-tuning in parameter count, defeating LoRA's purpose (parameter efficiency). You'd use enormous memory and training time with diminishing returns well before this rank.",
+    "Incorrect. Matching the hidden dimension (e.g., r=4096 for Llama-7B) means LoRA matrices are as large as the original weight matrices — no parameter savings. LoRA's value is that low-rank updates (r << hidden_dim) capture most task-specific information."
+  ]
+},
+{
+  id: "ft47", topic: "Fine-tuning & Alignment", pageId: "kp_sft_rl_integration",
+  question: "How do you know when the SFT stage is 'done enough' to move on to RL?",
+  options: [
+    "When training loss reaches exactly zero",
+    "After a fixed number of epochs (always 3)",
+    "When the model consistently follows instructions and produces structured responses — validation loss has plateaued and outputs are formatted well enough for the reward model to score",
+    "When the model achieves 100% accuracy on the test set"
+  ],
+  correct: 2,
+  explanation: [
+    "Incorrect. Training loss of zero means severe overfitting — the model has memorised every training example. This is worse than stopping earlier, not a readiness signal.",
+    "Incorrect. Fixed epoch counts ignore the actual model behaviour. Some datasets need 1 epoch, others need 5. The decision should be based on evaluation metrics, not an arbitrary count.",
+    "Correct. SFT readiness has two components: (1) Loss signal — validation loss has plateaued (further training won't improve generalisation). (2) Qualitative signal — the model produces well-structured, instruction-following responses. The second point matters specifically for RL: the reward model needs to score coherent, structured responses. If the SFT model produces garbled text or ignores instructions, reward model scores will be noisy and RL will fail. SFT doesn't need to produce GREAT responses — just structured, on-topic ones that RL can then improve.",
+    "Incorrect. 100% test accuracy is unrealistic and usually indicates data leakage or a trivially easy test set. SFT's goal is 'good enough format' for RL to refine, not perfection."
+  ]
+},
+{
+  id: "ft48", topic: "Fine-tuning & Alignment", pageId: "kp_ft_compute_planning",
+  question: "A 7B parameter model in fp16 requires ~14GB just for the model weights. Why does full fine-tuning need ~80GB VRAM, not 14GB?",
+  options: [
+    "The training framework adds overhead from logging and monitoring",
+    "Optimizer states (Adam stores 2 copies), gradients (1 copy), and activations add ~4-6× the weight memory during training",
+    "The dataset is stored in GPU memory during training",
+    "The model is copied multiple times for parallel processing"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. Logging overhead is negligible compared to the memory required for training state. The overhead is mathematical, not operational.",
+    "Correct. Training memory breakdown for a 7B model in fp16: (1) Model weights: 14GB. (2) AdamW optimizer states: ~28GB (maintains first and second moment estimates, each the size of the weights, in fp32). (3) Gradients: ~14GB (one gradient per parameter). (4) Activations: ~10-20GB+ (intermediate values stored for backpropagation, depends on batch size and sequence length). Total: ~66-76GB minimum, often requiring 80GB A100s. This is why LoRA is so impactful — it makes only 1-10% of parameters trainable, dramatically reducing optimizer state and gradient memory.",
+    "Incorrect. Training datasets are loaded in batches from CPU memory/disk, not stored entirely on GPU. The batch size affects activation memory but not in the way this answer suggests.",
+    "Incorrect. Standard single-GPU training uses one copy of the model. Data parallelism duplicates the model across GPUs, but that's a multi-GPU strategy, not single-GPU overhead."
+  ]
+},
+{
+  id: "ft49", topic: "Fine-tuning & Alignment", pageId: "kp_ft_compute_planning",
+  question: "Why does LoRA reduce memory requirements so dramatically compared to full fine-tuning?",
+  options: [
+    "LoRA uses a smaller model architecture with fewer layers",
+    "LoRA freezes the base model and only trains small adapter matrices — optimizer states and gradients are only needed for ~1-10% of parameters",
+    "LoRA compresses the model weights using quantization",
+    "LoRA trains on smaller datasets, requiring less memory"
+  ],
+  correct: 1,
+  explanation: [
+    "Incorrect. LoRA doesn't change the model architecture — the full model is still used for inference. It adds small adapter matrices alongside the existing layers.",
+    "Correct. Memory savings come from the optimizer, not the model. In full fine-tuning, AdamW stores 2 state tensors per parameter (8 bytes per param in fp32). For a 7B model, that's ~56GB for optimizer states alone. With LoRA (rank 16), only ~0.1-1% of parameters are trainable — optimizer states drop from ~56GB to ~0.5GB. Gradients similarly shrink. The base model weights are still in memory (14GB in fp16) but frozen, with no optimizer states or gradient storage. This is why a 7B model that needs an 80GB A100 for full fine-tuning fits on a 24GB consumer GPU with LoRA.",
+    "Incorrect. That's QLoRA (LoRA + quantization), not LoRA alone. Standard LoRA keeps the base model in fp16/bf16. The memory saving comes from only training a small number of adapter parameters, not from compressing the base weights.",
+    "Incorrect. Dataset size affects data loading, not GPU memory for training. LoRA's memory savings come from the reduced number of trainable parameters, independent of dataset size."
+  ]
 }
 ];

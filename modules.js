@@ -1990,6 +1990,19 @@ Classify the sentiment:<br>
   level: "intermediate",
   readTime: "12 min",
   linkedTopics: ["Fine-tuning & Alignment", "Evaluation & Benchmarking"],
+  linkedPages: [
+    "kp_post_training_pipeline", "kp_sft_mechanics", "kp_reward_model_training",
+    "kp_ppo_mechanics", "kp_reward_hacking", "kp_reasoning_posttraining",
+    "kp_rlaif_safety", "kp_ft_evaluation_design", "kp_ft_hyperparameter_guide",
+    "kp_ft_data_strategy", "kp_sft_rl_integration", "kp_ft_error_analysis",
+    "kp_ft_compute_planning", "kp_ft_production"
+  ],
+  linkedQuestionIds: [
+    "ft18","ft19","ft20","ft21","ft22","ft23","ft24","ft25","ft26","ft27",
+    "ft28","ft29","ft30","ft31","ft32","ft33","ft34","ft35","ft36","ft37",
+    "ft38","ft39","ft40","ft41","ft42","ft43","ft44","ft45","ft46","ft47",
+    "ft48","ft49"
+  ],
   content: `
 <h2>Pre-training Gets You a Smart Autocomplete. Post-training Gets You an Assistant.</h2>
 

@@ -147,6 +147,7 @@
         <div class="spacer"></div>
       </div>
       <div class="module-body" id="module-read-body"></div>
+      <div id="module-linked-pages"></div>
       <div class="read-footer">
         <button class="btn btn-primary btn-lg" id="module-quiz-btn" onclick="app.startModuleQuiz()">Test Yourself</button>
       </div>
@@ -165,7 +166,7 @@
     <!-- Read Screen (Single Knowledge Page) -->
     <div id="screen-read" class="screen">
       <div class="screen-header">
-        <button class="back-btn" onclick="app.showScreen('learn')">&larr;</button>
+        <button class="back-btn" id="read-back-btn" onclick="app.showScreen('learn')">&larr;</button>
         <h2 id="read-title">Page</h2>
         <div class="spacer"></div>
       </div>

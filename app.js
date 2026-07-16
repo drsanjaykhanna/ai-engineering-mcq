@@ -483,17 +483,55 @@ const app = {
     this.currentModuleIdx = idx;
     document.getElementById('module-read-title').textContent = mod.title;
     document.getElementById('module-read-body').innerHTML = mod.content;
+
+    const linkedPages = mod.linkedPages || [];
+    const pagesContainer = document.getElementById('module-linked-pages');
+    if (linkedPages.length > 0) {
+      let html = '<div class="module-linked-section"><h3>Deep Dive: Knowledge Pages</h3>';
+      linkedPages.forEach(pageId => {
+        const page = KNOWLEDGE_PAGES.find(p => p.id === pageId);
+        if (!page) return;
+        const qCount = QUESTIONS.filter(q => q.pageId === pageId).length;
+        html += `<div class="module-linked-card" onclick="app.openPageFrom('module-read', '${pageId}')">
+          <div class="module-linked-title">${page.title}</div>
+          <div class="module-linked-meta">${qCount} linked question${qCount !== 1 ? 's' : ''}</div>
+        </div>`;
+      });
+      html += '</div>';
+      pagesContainer.innerHTML = html;
+      pagesContainer.style.display = 'block';
+    } else {
+      pagesContainer.style.display = 'none';
+    }
+
+    const linkedQIds = mod.linkedQuestionIds || [];
     const linkedTopics = mod.linkedTopics || [];
-    const linkedQs = QUESTIONS.filter(q => linkedTopics.includes(q.topic));
-    document.getElementById('module-quiz-btn').style.display = linkedQs.length > 0 ? 'block' : 'none';
+    const linkedQs = linkedQIds.length > 0
+      ? QUESTIONS.filter(q => linkedQIds.includes(q.id))
+      : QUESTIONS.filter(q => linkedTopics.includes(q.topic));
+    const quizBtn = document.getElementById('module-quiz-btn');
+    quizBtn.style.display = linkedQs.length > 0 ? 'block' : 'none';
+    if (linkedQs.length > 0) {
+      quizBtn.textContent = linkedQIds.length > 0
+        ? `Test Yourself (${linkedQs.length} questions)`
+        : 'Test Yourself';
+    }
     this.showScreen('module-read');
+  },
+
+  openPageFrom(returnScreen, pageId) {
+    this._pageReturnScreen = returnScreen;
+    this.openPage(pageId);
   },
 
   startModuleQuiz() {
     if (this.currentModuleIdx === null) return;
     const mod = LEARNING_MODULES[this.currentModuleIdx];
+    const linkedQIds = mod.linkedQuestionIds || [];
     const linkedTopics = mod.linkedTopics || [];
-    const qs = QUESTIONS.filter(q => linkedTopics.includes(q.topic));
+    const qs = linkedQIds.length > 0
+      ? QUESTIONS.filter(q => linkedQIds.includes(q.id))
+      : QUESTIONS.filter(q => linkedTopics.includes(q.topic));
     if (qs.length === 0) return;
     this.startQuiz(this.shuffle(qs).slice(0, 20));
   },
@@ -533,10 +571,17 @@ const app = {
 
   currentPageId: null,
 
+  _pageReturnScreen: 'learn',
+
   openPage(pageId) {
     const page = KNOWLEDGE_PAGES.find(p => p.id === pageId);
     if (!page) return;
     this.currentPageId = pageId;
+    if (!this._pageReturnScreen) this._pageReturnScreen = 'learn';
+    document.getElementById('read-back-btn').onclick = () => {
+      app.showScreen(app._pageReturnScreen);
+      app._pageReturnScreen = 'learn';
+    };
 
     document.getElementById('read-title').textContent = page.title;
     let html = `<div class="knowledge-page">`;

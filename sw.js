@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aimcq-v18';
+const CACHE_NAME = 'aimcq-v19';
 const ASSETS = [
   './',
   './index.html',

@@ -2019,5 +2019,192 @@ const KNOWLEDGE_PAGES = [
     "Feedback flywheel: user signals → new preference data → better reward model → better policy → more users. But monitor for demographic bias.",
     "Production monitoring: quality scoring (LLM-as-judge), safety flag rates, distribution shift detection, latency/cost tracking."
   ]
+},
+{
+  id: "kp_reward_model_training",
+  title: "How Reward Models Are Built: From Human Comparisons to Quality Scores",
+  content: `<p>A <strong>reward model</strong> is the component that tells the RL algorithm what &quot;good&quot; looks like. Without it, reinforcement learning has no signal to optimise against. Building a reliable reward model is arguably the hardest part of the RLHF pipeline.</p>
+<p><strong>The Bradley-Terry model for pairwise preferences:</strong></p>
+<p>Reward models are trained on <strong>comparison data</strong>, not absolute scores. Human annotators see two model responses to the same prompt and pick the better one. The Bradley-Terry model converts these pairwise comparisons into scalar reward scores: if response A is preferred to response B, the model learns to assign a higher reward to A. Mathematically, P(A &gt; B) = sigmoid(r(A) - r(B)), where r() is the reward. This pairwise approach is far more reliable than asking humans to assign absolute scores (is this response a 7 out of 10?).</p>
+<p><strong>Collecting comparison data:</strong></p>
+<ul>
+<li>Generate 2-4 responses per prompt from the current policy model.</li>
+<li>Present pairs to human annotators who select the preferred response.</li>
+<li>Collect 10K-100K comparisons depending on task complexity.</li>
+<li><strong>Inter-annotator agreement</strong> typically ranges from 60-80%. Below 60% suggests the task is too subjective or guidelines are ambiguous. Agreement rates directly bound the ceiling of reward model quality.</li>
+</ul>
+<p><strong>Reward model architecture:</strong></p>
+<p>The reward model is usually the <strong>same architecture as the LLM</strong> being trained, with the language modelling head replaced by a <strong>scalar output head</strong> (a single linear layer that maps the final hidden state to one number). Often initialised from the SFT model checkpoint. This works because the model already understands language quality from pre-training.</p>
+<p><strong>Calibration and failure modes:</strong></p>
+<p>Reward model scores are <strong>not calibrated probabilities</strong>. A score of 0.8 does not mean &quot;80% good&quot; &mdash; it only means &quot;better than something scoring 0.6.&quot; This matters because RL optimises against these scores aggressively. If the reward model is poorly calibrated in certain regions, the policy will exploit those regions.</p>
+<p>Reward models fail on: <strong>out-of-distribution inputs</strong> (prompts unlike training data), <strong>adversarial responses</strong> (outputs crafted to score high without being useful), and <strong>length bias</strong> (longer responses often score higher regardless of quality). Ensemble reward models or confidence-weighted rewards can mitigate these issues.</p>`,
+  keyPoints: [
+    "Bradley-Terry model: pairwise preferences (A > B) converted to scalar rewards via sigmoid(r(A) - r(B)). More reliable than absolute scoring.",
+    "Inter-annotator agreement of 60-80% is typical. Below 60% means ambiguous guidelines. Agreement bounds reward model quality ceiling.",
+    "Architecture: same as the LLM with a scalar head replacing the language modelling head. Often initialised from the SFT checkpoint.",
+    "Reward scores are NOT calibrated probabilities. Failure modes: out-of-distribution inputs, adversarial gaming, and length bias."
+  ]
+},
+{
+  id: "kp_reasoning_posttraining",
+  title: "Enhancing Reasoning Through RL: The DeepSeek-R1 and o1 Approach",
+  content: `<p>One of the most significant discoveries in post-training is that <strong>reinforcement learning can teach models to reason</strong> &mdash; not by showing them reasoning examples, but by rewarding correct answers and letting reasoning <strong>emerge</strong>.</p>
+<p><strong>Verifiable rewards for math and code:</strong></p>
+<p>For domains like mathematics and programming, you do not need a learned reward model. The reward is <strong>verifiable</strong>: the answer is either correct or it is not. A math problem has a definitive solution. Code either passes the test suite or it does not. This eliminates reward model noise and reward hacking entirely &mdash; the signal is ground truth.</p>
+<p><strong>Process Reward Models (PRMs) vs Outcome Reward Models (ORMs):</strong></p>
+<ul>
+<li><strong>ORMs</strong> give a single reward at the end: was the final answer right? Simple but provides sparse signal.</li>
+<li><strong>PRMs</strong> reward each intermediate step: was step 3 of the proof valid? Much richer signal but far more expensive to annotate (humans must evaluate each reasoning step).</li>
+<li>PRMs consistently outperform ORMs on complex reasoning tasks because they guide the model through the reasoning process rather than only judging the destination.</li>
+</ul>
+<p><strong>Emergent chain-of-thought:</strong></p>
+<p>The key insight from DeepSeek-R1 and OpenAI o1: when you train with RL using verifiable rewards, models <strong>spontaneously learn to produce chain-of-thought reasoning</strong> without being explicitly taught. The model discovers that &quot;thinking step by step&quot; leads to more correct answers, which means higher rewards. This emergent behaviour includes self-correction, backtracking, and trying alternative approaches.</p>
+<p><strong>Why RL outperforms SFT for reasoning:</strong></p>
+<p>SFT on reasoning traces teaches imitation &mdash; the model copies the style of reasoning in its training data. RL enables <strong>exploration</strong>: the model can discover novel reasoning strategies that humans never demonstrated. SFT has a ceiling (the quality of your demonstrations); RL can exceed that ceiling because it optimises for outcomes, not for mimicry.</p>
+<p><strong>The DeepSeek-R1 recipe:</strong></p>
+<p>SFT on a small set of high-quality examples to establish basic instruction following, then <strong>Group Relative Policy Optimisation (GRPO)</strong> with verifiable rewards on math and code problems. GRPO is more memory-efficient than PPO because it does not require a separate critic model &mdash; it estimates the baseline from the group of sampled responses. The result: reasoning capabilities that rival or exceed models trained on vastly more data.</p>`,
+  keyPoints: [
+    "Verifiable rewards (math/code correctness) eliminate reward model noise and hacking. Ground truth is the reward signal.",
+    "PRMs reward each reasoning step; ORMs reward only the final answer. PRMs outperform on complex tasks but cost more to annotate.",
+    "Emergent chain-of-thought: RL with verifiable rewards causes models to spontaneously learn step-by-step reasoning, self-correction, and backtracking.",
+    "DeepSeek-R1 recipe: SFT for basics, then GRPO with verifiable rewards. GRPO skips the critic model, using group-relative baselines instead."
+  ]
+},
+{
+  id: "kp_rlaif_safety",
+  title: "RLAIF for Safety: Scaling Alignment Without Human Bottlenecks",
+  content: `<p><strong>RL from AI Feedback (RLAIF)</strong> replaces human annotators with AI models that evaluate outputs against a set of principles. For safety alignment specifically, this approach has become essential because the volume of safety-relevant scenarios far exceeds what human annotators can cover.</p>
+<p><strong>How RLAIF works for safety:</strong></p>
+<p>Instead of humans comparing two responses, an AI judge evaluates responses against explicit <strong>constitutional principles</strong> (e.g., &quot;the response should not help with illegal activities,&quot; &quot;the response should be honest about uncertainty&quot;). The AI judge produces preference data: for each prompt, it rates which response better adheres to the constitution. This preference data trains a reward model, which then guides RL &mdash; exactly the same pipeline as RLHF, but with AI-generated preferences instead of human ones.</p>
+<p><strong>The scaling advantage:</strong></p>
+<ul>
+<li>Human annotation costs $1-10 per comparison. AI feedback costs fractions of a cent.</li>
+<li>AI feedback can be generated 24/7 at massive scale &mdash; <strong>100x cheaper</strong> and orders of magnitude faster.</li>
+<li>This enables coverage of rare edge cases, multilingual safety scenarios, and adversarial attack patterns that would be impractical to annotate manually.</li>
+</ul>
+<p><strong>Risks and limitations:</strong></p>
+<ul>
+<li><strong>Echo chamber effect:</strong> If the judge model shares biases with the policy model (often they are the same architecture or from the same family), RLAIF reinforces those biases rather than correcting them. The model grades its own homework.</li>
+<li><strong>Sycophancy amplification:</strong> AI judges may prefer agreeable, confident responses over accurate but hedged ones, training the policy to be confidently wrong.</li>
+<li><strong>Distributional blindness:</strong> AI judges may not recognise culturally specific harms, subtle manipulation tactics, or novel jailbreak patterns outside their training distribution.</li>
+</ul>
+<p><strong>Red teaming + RLAIF combination:</strong></p>
+<p>The most robust safety pipelines combine RLAIF for broad coverage with <strong>human red teaming</strong> for adversarial depth. Red teamers deliberately probe for failures &mdash; jailbreaks, harmful completions, deceptive alignment &mdash; that AI judges miss. Red team findings become targeted training data, while RLAIF maintains baseline safety across the full distribution. This layered approach catches both common safety failures (RLAIF) and sophisticated attacks (red teaming).</p>`,
+  keyPoints: [
+    "RLAIF uses AI judges evaluating against constitutional principles to generate preference data. Same pipeline as RLHF but 100x cheaper.",
+    "Echo chamber risk: if the judge shares biases with the policy model, RLAIF reinforces rather than corrects those biases.",
+    "AI judges may amplify sycophancy (preferring confident responses over accurate hedged ones) and miss culturally specific harms.",
+    "Best practice: combine RLAIF for broad safety coverage with human red teaming for adversarial depth. Layered defence catches both common and sophisticated failures."
+  ]
+},
+{
+  id: "kp_ft_evaluation_design",
+  title: "Designing Evaluations for Post-Training: The North Star",
+  content: `<p>The most common mistake in post-training is treating evaluation as the last step. In reality, <strong>evaluation design should come first</strong> &mdash; before collecting data, before choosing hyperparameters, before writing a single line of training code. Your evaluation suite defines what &quot;good&quot; means, and without that definition, you are optimising blindly.</p>
+<p><strong>Test suite composition:</strong></p>
+<p>A robust evaluation suite has three layers:</p>
+<ul>
+<li><strong>Task-specific metrics:</strong> Does the model perform your target task well? For summarisation: ROUGE scores, factual consistency checks, length compliance. For code generation: pass@k on test cases. For customer support: resolution accuracy, tone appropriateness.</li>
+<li><strong>General capability benchmarks:</strong> Has fine-tuning degraded broad capabilities? Run MMLU, HumanEval, MT-Bench, or domain-relevant benchmarks. Accept small, documented drops &mdash; but flag anything beyond 2-3%.</li>
+<li><strong>Safety tests:</strong> Has alignment been preserved? Red-teaming prompts, toxicity classifiers, refusal accuracy on harmful requests. RL optimisation can erode safety training, so this layer is non-negotiable.</li>
+</ul>
+<p><strong>Automated evaluation approaches:</strong></p>
+<ul>
+<li><strong>LLM-as-judge:</strong> Use a strong model (e.g., GPT-4 or Claude) to rate outputs on defined criteria. Correlates well with human judgment for most tasks. Use rubrics and provide reference answers for consistency.</li>
+<li><strong>Reference-based metrics:</strong> BLEU, ROUGE, exact match &mdash; fast and deterministic but miss nuance. Best for tasks with well-defined correct answers.</li>
+<li><strong>Human evaluation:</strong> Gold standard but expensive and slow. Reserve for final validation and calibrating automated metrics.</li>
+</ul>
+<p><strong>Monitoring training progress:</strong></p>
+<p>Track three curves during training: <strong>loss curves</strong> (should decrease then plateau), <strong>reward curves</strong> (should increase but beware sudden jumps &mdash; may indicate reward hacking), and <strong>KL divergence</strong> from the base model (measures how far the policy has drifted &mdash; too high means catastrophic forgetting risk).</p>
+<p><strong>When to stop training:</strong></p>
+<p>The evaluation suite tells you when to stop &mdash; not the epoch count. Stop when eval metrics plateau or begin degrading. A common mistake is evaluating on the same distribution as training data, which masks overfitting. Always hold out evaluation prompts that differ meaningfully from training prompts in topic, complexity, or style.</p>`,
+  keyPoints: [
+    "Evaluation comes FIRST: define what good looks like before collecting data or training. Your eval suite IS your optimisation target.",
+    "Three evaluation layers: task-specific metrics + general capability benchmarks + safety tests. All three are mandatory.",
+    "Track loss curves, reward curves, and KL divergence during training. Sudden reward jumps may indicate hacking, not improvement.",
+    "Stop when eval metrics plateau, not at a fixed epoch. Hold out eval prompts that differ from training distribution to detect overfitting."
+  ]
+},
+{
+  id: "kp_ft_hyperparameter_guide",
+  title: "Hyperparameter Optimisation for Post-Training: The Practical Guide",
+  content: `<p>Hyperparameter tuning in post-training is less about finding a global optimum and more about <strong>avoiding catastrophic configurations</strong>. A few key parameters dominate outcomes, and getting them in the right ballpark matters far more than precise optimisation.</p>
+<p><strong>Learning rate &mdash; the critical parameter:</strong></p>
+<p>The learning rate controls how much model weights change per update. For SFT, use <strong>1e-5 to 5e-5</strong> (10-100x lower than pre-training). For RL (PPO/GRPO), use <strong>1e-6 to 5e-6</strong> (even lower, because RL updates are noisier). Schedule options: <strong>constant</strong> (simplest, often sufficient), <strong>cosine decay</strong> (gradually reduces to near zero, good for longer runs), <strong>warmup + linear decay</strong> (best for stability). Always use a warmup period for the first 5-10% of steps to avoid destructive updates to pre-trained weights.</p>
+<p><strong>LoRA rank and alpha:</strong></p>
+<ul>
+<li><strong>Rank (r):</strong> Controls the capacity of the low-rank adapters. Rank 8-16 is sufficient for simple format tasks. Rank 32-64 for complex domain adaptation. Higher rank = more parameters = more memory but more expressive.</li>
+<li><strong>Alpha:</strong> Scaling factor for LoRA updates. A common starting point is <strong>alpha = 2x rank</strong>. Higher alpha amplifies the LoRA contribution. The effective learning rate is scaled by alpha/rank, so changing alpha changes how aggressively the adapters update.</li>
+</ul>
+<p><strong>Batch size and gradient accumulation:</strong></p>
+<p>Larger effective batch sizes produce more stable gradients but require more memory. <strong>Gradient accumulation</strong> lets you simulate large batches on limited hardware: accumulate gradients over N mini-batches before updating. Effective batch size = micro-batch size x accumulation steps x number of GPUs. Start with effective batch size of 32-128.</p>
+<p><strong>Weight decay:</strong></p>
+<p>L2 regularisation that prevents weights from growing too large, reducing overfitting. Typical range: <strong>0.01-0.1</strong>. Higher values = more regularisation = more conservative updates. Often set to 0.01 and left alone unless overfitting is observed.</p>
+<p><strong>Number of epochs:</strong></p>
+<p>Almost always <strong>1-3 for SFT</strong>. Signs you need more: training loss still decreasing, validation metrics still improving. Signs you need fewer: validation loss diverges from training loss, model starts repeating training examples verbatim, general capability benchmarks degrade.</p>
+<p><strong>Practical workflow:</strong></p>
+<p>Start with published defaults for your framework (Hugging Face, Axolotl, etc.). Change <strong>one parameter at a time</strong>. Track eval metrics for each change. Use the smallest model size for initial experiments, then scale up with the best configuration. Document everything &mdash; hyperparameter search is wasted if you cannot reproduce the winning configuration.</p>`,
+  keyPoints: [
+    "Learning rate is the most critical param. SFT: 1e-5 to 5e-5. RL: 1e-6 to 5e-6. Always include warmup for 5-10% of steps.",
+    "LoRA rank 8-16 for format tasks, 32-64 for domain adaptation. Alpha = 2x rank as starting point. Effective LR scales by alpha/rank.",
+    "Gradient accumulation simulates large batches on limited hardware. Effective batch = micro-batch x accumulation steps x GPUs.",
+    "Practical workflow: start with published defaults, change ONE param at a time, track eval metrics, document everything for reproducibility."
+  ]
+},
+{
+  id: "kp_sft_rl_integration",
+  title: "Integrating SFT and RL: When to Switch and How to Iterate",
+  content: `<p>SFT and RL are not independent stages &mdash; they form an <strong>iterative loop</strong> where each stage informs the next. Understanding when to transition from SFT to RL, and when to cycle back, is one of the most important practical skills in post-training.</p>
+<p><strong>SFT &quot;done enough&quot; signals:</strong></p>
+<ul>
+<li>Validation loss has plateaued (no meaningful improvement for several hundred steps).</li>
+<li>The model follows instructions consistently &mdash; correct output format, appropriate length, proper structure.</li>
+<li>The model produces <strong>structured responses</strong> that a reward model can meaningfully score. If outputs are incoherent or wildly off-format, the reward model cannot provide useful signal, and RL will fail.</li>
+</ul>
+<p><strong>Data flow through the pipeline:</strong></p>
+<p>SFT training data teaches format and basic competence. The SFT model then generates responses to new prompts. Human annotators compare these responses pairwise, creating preference data. This preference data trains the reward model. The reward model then guides RL to improve the SFT model beyond what demonstrations alone could achieve. Each stage depends on the quality of the previous stage.</p>
+<p><strong>Iterative refinement &mdash; the &quot;onion peeling&quot; metaphor:</strong></p>
+<p>Each training cycle addresses the next layer of issues. Round 1: SFT fixes format, RL improves quality on common prompts. Round 2: failure analysis reveals edge cases, new SFT data targets those gaps, RL refines quality on the expanded distribution. Round 3: production feedback exposes real-world failures, feeding the next cycle. Each iteration peels away a layer of problems, revealing the next layer underneath.</p>
+<p><strong>When to skip RL entirely:</strong></p>
+<ul>
+<li><strong>Format-only tasks:</strong> If you only need the model to output JSON, follow templates, or restructure text, SFT alone is usually sufficient.</li>
+<li><strong>Small teams / limited compute:</strong> RL requires significantly more infrastructure (reward model training, PPO optimisation loop, multiple model copies in memory). If resources are constrained, SFT with high-quality data delivers most of the value.</li>
+<li><strong>Clear ground truth:</strong> If correct answers are unambiguous and available, SFT on those answers is more efficient than RL.</li>
+</ul>
+<p><strong>When SFT + DPO is enough vs full PPO/GRPO:</strong></p>
+<p><strong>Direct Preference Optimisation (DPO)</strong> skips the reward model entirely, learning directly from preference pairs. It is simpler, more stable, and requires less compute than PPO. DPO works well when your preference data is high-quality and your task has clear better/worse distinctions. PPO or GRPO is needed when: you want online learning (model generates new responses during training), your reward signal requires complex computation, or you need the exploration benefits of RL for discovering novel strategies (e.g., reasoning tasks).</p>`,
+  keyPoints: [
+    "SFT is done enough when: validation loss plateaus, the model follows instructions consistently, and outputs are structured enough for a reward model to score.",
+    "The onion peeling metaphor: each SFT-RL cycle addresses the next layer of issues. Round 1 fixes basics, Round 2 targets edge cases, Round 3 addresses production failures.",
+    "Skip RL for format-only tasks, small teams, or when ground truth is clear and unambiguous. SFT alone delivers most value in these cases.",
+    "DPO is simpler than PPO (no reward model needed) and works for clear preferences. Use PPO/GRPO when you need online learning, complex rewards, or exploration."
+  ]
+},
+{
+  id: "kp_ft_compute_planning",
+  title: "Compute and Infrastructure for Post-Training",
+  content: `<p>Understanding memory requirements and infrastructure options is essential for planning a fine-tuning project. Underestimating compute needs leads to failed training runs; overestimating wastes budget.</p>
+<p><strong>Memory estimation formula:</strong></p>
+<p>Total GPU memory = <strong>model parameters x bytes per param</strong> + <strong>optimizer states</strong> + <strong>gradients</strong> + <strong>activations</strong>. For a 7B parameter model in fp16 (2 bytes per param): model weights alone require 14 GB. The AdamW optimiser stores two additional copies of every trainable parameter (first and second moment estimates) in fp32, adding 56 GB for full fine-tuning. Gradients add another 14 GB. Activations vary with batch size and sequence length. Total: roughly <strong>80+ GB for full fine-tuning of a 7B model</strong> (requires an A100 80GB or equivalent).</p>
+<p><strong>LoRA memory savings:</strong></p>
+<p>LoRA freezes the base model and trains only low-rank adapter matrices &mdash; typically <strong>1-10% of total parameters</strong>. Since optimiser states are only maintained for trainable parameters, memory drops dramatically. A 7B model with LoRA (rank 16) has roughly 20-40M trainable parameters instead of 7B. This reduces the optimiser state from 56 GB to under 1 GB. Result: a 7B LoRA fine-tune fits on a <strong>24 GB GPU</strong> (RTX 3090/4090). With <strong>QLoRA</strong> (4-bit quantised base model + LoRA adapters), the same model fits on <strong>16 GB</strong>.</p>
+<p><strong>Gradient checkpointing:</strong></p>
+<p>Normally, all intermediate activations are stored during the forward pass for use in backpropagation. Gradient checkpointing <strong>discards intermediate activations</strong> and recomputes them during the backward pass. This trades compute (roughly 33% slower training) for significant memory savings (up to 60% reduction in activation memory). Essential for training large models on limited hardware.</p>
+<p><strong>Mixed precision training:</strong></p>
+<p>Run the forward and backward pass in <strong>fp16 or bf16</strong> (half precision) while maintaining a <strong>fp32 master copy</strong> of the weights for parameter updates. This halves the memory for activations and gradients and speeds up computation on modern GPUs with tensor cores. bf16 is preferred over fp16 when available because it has a larger dynamic range, reducing the risk of numerical overflow. Mixed precision saves roughly <strong>30-50% total memory</strong>.</p>
+<p><strong>Multi-GPU strategies:</strong></p>
+<ul>
+<li><strong>Data parallel (DDP):</strong> Each GPU holds a complete copy of the model and processes different batches. Gradients are averaged across GPUs. Simple to implement, scales linearly with GPU count, but each GPU must fit the full model.</li>
+<li><strong>Model parallel (tensor/pipeline):</strong> The model is split across GPUs. Tensor parallelism splits individual layers; pipeline parallelism assigns different layers to different GPUs. Necessary when the model does not fit on a single GPU.</li>
+<li><strong>FSDP (Fully Sharded Data Parallel):</strong> Shards model parameters, gradients, and optimiser states across GPUs. Each GPU holds only a fraction of the model. Combines the simplicity of data parallelism with the memory efficiency of model parallelism. The standard approach for large-scale fine-tuning.</li>
+</ul>
+<p><strong>Practical guidance and cost estimation:</strong></p>
+<p>A single A100 (80 GB) costs roughly $1-2/hour on cloud providers. A 7B model LoRA fine-tune on 10K examples typically takes 2-4 hours on one A100 ($2-8). Full fine-tuning of the same model takes 8-16 hours on 4x A100s ($32-128). A 70B model LoRA fine-tune needs 4x A100s for 8-16 hours ($32-128). Budget 3-5x your initial estimate for hyperparameter search, failed runs, and iteration.</p>`,
+  keyPoints: [
+    "Memory formula: model params x bytes + optimizer states + gradients + activations. A 7B full fine-tune needs ~80 GB (A100). LoRA: 24 GB (RTX 4090). QLoRA: 16 GB.",
+    "LoRA trains 1-10% of parameters, slashing optimizer state memory from ~56 GB to under 1 GB for a 7B model. QLoRA adds 4-bit quantisation for further savings.",
+    "Gradient checkpointing trades ~33% slower training for up to 60% less activation memory. Mixed precision (bf16) saves 30-50% total memory.",
+    "Multi-GPU: DDP (simple, each GPU holds full model), FSDP (shards everything, standard for large-scale), model parallel (when model exceeds single GPU). Budget 3-5x for iteration."
+  ]
 }
 ];
